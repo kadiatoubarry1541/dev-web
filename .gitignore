@@ -1,0 +1,37 @@
+# Fichiers sensibles / config locale
+.env
+.env.local
+.env.*.local
+config/bdd.local.php
+
+# IDE et éditeurs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs et temporaires
+*.log
+logs/
+tmp/
+temp/
+cache/
+
+# Uploads sensibles (optionnel : décommenter si vous ne voulez pas versionner les photos)
+# uploads/profiles/*.jfif
+# uploads/profiles/*.jpeg
+# uploads/profiles/*.png
+
+# Dépendances (si composer utilisé plus tard)
+/vendor/
+composer.lock
+
+# Fichiers de test / debug (optionnel)
+# test-*.php
+# fix-*.php

@@ -1,0 +1,21 @@
+# ProjetClinique - Déploiement sur Render
+# L'app PHP utilise Docker. La base MySQL doit être créée séparément (voir DEPLOIEMENT.md).
+
+services:
+  - type: web
+    name: projetclinique
+    runtime: docker
+    region: frankfurt
+    plan: free
+    envVars:
+      - key: MYSQL_HOST
+        sync: false  # À remplir avec l'hôte interne de votre MySQL Render
+      - key: MYSQL_DATABASE
+        value: sante1
+      - key: MYSQL_USER
+        sync: false  # Utilisateur MySQL
+      - key: MYSQL_PASSWORD
+        sync: false  # Mot de passe MySQL
+      - key: MYSQL_PORT
+        value: "3306"
+    healthCheckPath: /

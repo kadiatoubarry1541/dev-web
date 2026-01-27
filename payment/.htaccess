@@ -1,0 +1,16 @@
+# Protection du dossier payment
+# Autoriser l'accès aux fichiers PHP uniquement
+
+<FilesMatch "\.(php)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Empêcher l'accès direct aux fichiers de configuration
+<FilesMatch "^(config|\.htaccess)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Désactiver l'affichage de la liste des fichiers
+Options -Indexes

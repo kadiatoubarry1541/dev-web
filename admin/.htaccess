@@ -1,0 +1,5 @@
+# Protection du dossier admin
+# Seuls les administrateurs peuvent accéder
+
+# Si vous utilisez Apache, vous pouvez ajouter une protection supplémentaire ici
+# Mais la protection principale est gérée par PHP dans chaque fichier

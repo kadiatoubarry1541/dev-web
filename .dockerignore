@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+.env.*
+*.md
+!INSTALLATION.md
+.cursor
+.idea
+.vscode
+*.log
+node_modules
+Dockerfile
+.dockerignore
+render.yaml
