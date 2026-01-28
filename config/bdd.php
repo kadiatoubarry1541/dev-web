@@ -22,7 +22,7 @@ if (!defined('BDD_INCLUDED')) {
             } else {
                 // Variables d'environnement (Render, etc.) ou valeurs par défaut (local XAMPP)
                 $server = getenv('MYSQL_HOST') ?: 'localhost';
-                $dbname = getenv('MYSQL_DATABASE') ?: 'sante1'; // Utiliser 'sante1' sans accent pour InfinityFree
+                $dbname = getenv('MYSQL_DATABASE') ?: 'santé1'; // Base locale avec accent
                 $port = getenv('MYSQL_PORT') ?: '3306';
                 $username = getenv('MYSQL_USER') ?: 'root';
                 $password = getenv('MYSQL_PASSWORD') ?: '';
