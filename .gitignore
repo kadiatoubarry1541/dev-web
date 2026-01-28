@@ -3,6 +3,8 @@
 .env.local
 .env.*.local
 config/bdd.local.php
+export_for_render.sql
+.import_done
 
 # IDE et éditeurs
 .idea/
