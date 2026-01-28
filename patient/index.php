@@ -66,9 +66,15 @@ $stats = [
 $rendez_vous = [];
 $rendez_vous_confirmes = [];
 $rendez_vous_attente = [];
+$demandes_en_attente = [];
+$dernier_rdv_confirme = null;
 
-if ($id_patient) {
-    try {
+try {
+    $user_id_dashboard = (int)($_SESSION['user_id'] ?? 0);
+    $matricule_dashboard = $user_info['matricule_patient'] ?? $_SESSION['matricule_patient'] ?? null;
+
+    if ($id_patient) {
+        // Rendez-vous déjà créés
         $rendez_vous = getRendezVousByPatient($id_patient);
         $stats['rdv_total'] = count($rendez_vous);
         foreach ($rendez_vous as $r) {
@@ -76,6 +82,7 @@ if ($id_patient) {
             if ($s === 'confirmé' || $s === 'terminé') {
                 $stats['rdv_confirmes']++;
                 $rendez_vous_confirmes[] = $r;
+                $dernier_rdv_confirme = $r; // on garde le dernier vu dans la boucle (les plus récents sont renvoyés d'abord)
             } elseif ($s === 'planifié') {
                 $stats['rdv_attente']++;
                 $rendez_vous_attente[] = $r;
@@ -83,9 +90,42 @@ if ($id_patient) {
         }
         $consultations = getConsultationsByPatient($id_patient);
         $stats['consultations'] = is_array($consultations) ? count($consultations) : 0;
-    } catch (Exception $e) {
-        error_log("Erreur dashboard patient: " . $e->getMessage());
     }
+
+    // Demandes encore en attente / confirmées (avant ou sans création de RDV)
+    if (function_exists('getDemandesByPatientForDashboard')) {
+        $demandes_en_attente = getDemandesByPatientForDashboard(
+            $user_id_dashboard ?: null,
+            $matricule_dashboard ?: null
+        );
+        if (!empty($demandes_en_attente)) {
+            $nb_attente = 0;
+            $nb_confirmes_dem = 0;
+            foreach ($demandes_en_attente as $dem) {
+                $st = trim($dem['statut'] ?? '');
+                if ($st === 'traitee') {
+                    $nb_confirmes_dem++;
+                    // si aucun RDV confirmé en base, on peut afficher au moins la demande confirmée
+                    if ($dernier_rdv_confirme === null) {
+                        $dernier_rdv_confirme = [
+                            'Date_rdv'    => $dem['Date_rdv_souhaitee'] ?? null,
+                            'Nom_service' => $dem['Nom_service'] ?? null,
+                            'Motif'       => $dem['motif'] ?? null,
+                            'Statut'      => 'confirmé',
+                        ];
+                    }
+                } elseif (in_array($st, ['en_attente_accueil','en_attente_service'], true)) {
+                    $nb_attente++;
+                }
+            }
+            $stats['rdv_attente'] += $nb_attente;
+            $stats['rdv_confirmes'] += $nb_confirmes_dem;
+            // Le total au moins égal au nombre de demandes/rendez-vous connus
+            $stats['rdv_total'] = max($stats['rdv_total'], $stats['rdv_attente'] + $stats['rdv_confirmes']);
+        }
+    }
+} catch (Exception $e) {
+    error_log("Erreur dashboard patient: " . $e->getMessage());
 }
 
 $page_title = 'Espace Patient';
@@ -160,6 +200,44 @@ require_once __DIR__ . '/partials/header.php';
     <?php elseif ($id_patient && $stats['rdv_total'] > 0): ?>
         <p style="margin-top: 8px; color: #28a745; font-size: 14px;"><i class="fas fa-check-circle"></i> Vous avez <?php echo $stats['rdv_total']; ?> rendez-vous enregistré(s).</p>
     <?php endif; ?>
+    <?php if ($dernier_rdv_confirme): ?>
+        <?php
+        $date_conf = isset($dernier_rdv_confirme['Date_rdv']) && $dernier_rdv_confirme['Date_rdv']
+            ? date('d/m/Y à H:i', strtotime($dernier_rdv_confirme['Date_rdv']))
+            : null;
+        $svc_conf  = $dernier_rdv_confirme['Nom_service'] ?? null;
+        ?>
+        <p style="margin-top: 6px; color: #155724; font-size: 14px;">
+            <strong><i class="fas fa-bell"></i> Dernier rendez-vous confirmé :</strong>
+            <?php if ($date_conf): ?>
+                le <?php echo htmlspecialchars($date_conf); ?>
+            <?php endif; ?>
+            <?php if ($svc_conf): ?>
+                au service <strong><?php echo htmlspecialchars($svc_conf); ?></strong>
+            <?php endif; ?>
+        </p>
+        <?php if (!empty($rendez_vous_confirmes)): ?>
+            <p style="margin-top: 4px; color: #155724; font-size: 13px; margin-bottom: 4px;">
+                <strong>Liste de vos rendez-vous confirmés :</strong>
+            </p>
+            <ul style="margin: 0 0 4px 18px; padding: 0; font-size: 13px; color: #155724;">
+                <?php foreach ($rendez_vous_confirmes as $rdv_conf): ?>
+                    <?php
+                        $dt = isset($rdv_conf['Date_rdv']) && $rdv_conf['Date_rdv']
+                            ? date('d/m/Y à H:i', strtotime($rdv_conf['Date_rdv']))
+                            : null;
+                        $svc = $rdv_conf['Nom_service'] ?? 'Service';
+                    ?>
+                    <li>
+                        <?php if ($dt): ?>
+                            le <?php echo htmlspecialchars($dt); ?>
+                        <?php endif; ?>
+                        au service <strong><?php echo htmlspecialchars($svc); ?></strong>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    <?php endif; ?>
 </div>
 
 <!-- Cartes KPI (style admin) -->
@@ -172,22 +250,26 @@ require_once __DIR__ . '/partials/header.php';
         <div class="kpi-value"><?php echo $stats['rdv_total']; ?></div>
         <div class="kpi-subtitle">Total</div>
     </div>
-    <div class="kpi-card orange">
-        <div class="kpi-header">
-            <div class="kpi-title">En attente</div>
-            <div class="kpi-icon"><i class="fas fa-hourglass-half"></i></div>
+    <a href="#rdv-attente" style="text-decoration:none; color:inherit;">
+        <div class="kpi-card orange">
+            <div class="kpi-header">
+                <div class="kpi-title">En attente</div>
+                <div class="kpi-icon"><i class="fas fa-hourglass-half"></i></div>
+            </div>
+            <div class="kpi-value"><?php echo $stats['rdv_attente']; ?></div>
+            <div class="kpi-subtitle">À confirmer</div>
         </div>
-        <div class="kpi-value"><?php echo $stats['rdv_attente']; ?></div>
-        <div class="kpi-subtitle">À confirmer</div>
-    </div>
-    <div class="kpi-card green">
-        <div class="kpi-header">
-            <div class="kpi-title">Confirmés</div>
-            <div class="kpi-icon"><i class="fas fa-check-circle"></i></div>
+    </a>
+    <a href="#rdv-confirmes" style="text-decoration:none; color:inherit;">
+        <div class="kpi-card green">
+            <div class="kpi-header">
+                <div class="kpi-title">Confirmés</div>
+                <div class="kpi-icon"><i class="fas fa-check-circle"></i></div>
+            </div>
+            <div class="kpi-value"><?php echo $stats['rdv_confirmes']; ?></div>
+            <div class="kpi-subtitle">Validés</div>
         </div>
-        <div class="kpi-value"><?php echo $stats['rdv_confirmes']; ?></div>
-        <div class="kpi-subtitle">Validés</div>
-    </div>
+    </a>
     <div class="kpi-card red">
         <div class="kpi-header">
             <div class="kpi-title">Consultations</div>
@@ -203,13 +285,12 @@ require_once __DIR__ . '/partials/header.php';
         <h3><i class="fas fa-bolt"></i> Actions Rapides</h3>
         <a href="../profil.php" class="btn-action"><i class="fas fa-user"></i> Mon Profil</a>
         <a href="../rendez-vous.php" class="btn-action green"><i class="fas fa-calendar-plus"></i> Prendre rendez-vous</a>
-        <a href="../paiements/liste-paiements.php" class="btn-action"><i class="fas fa-money-bill-wave"></i> Mes Paiements</a>
     </div>
 
     <div class="recent-card" id="mes-rendez-vous">
         <h3><i class="fas fa-calendar-alt"></i> Mes rendez-vous (<?php echo $stats['rdv_total']; ?>)</h3>
         <p class="kpi-subtitle" style="margin-bottom: 20px;">Tous les rendez-vous que vous avez pris.</p>
-        <?php if (empty($rendez_vous)): ?>
+        <?php if (empty($rendez_vous) && empty($demandes_en_attente)): ?>
             <div style="background: #f0f7ff; border: 1px solid #4A90E2; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
                 <p style="color: #1e3a5f; margin: 0 0 8px 0;"><strong><i class="fas fa-info-circle"></i> Aucun rendez-vous pour le moment.</strong></p>
                 <p style="color: #555; font-size: 14px; margin: 0 0 16px 0;">Utilisez votre matricule pour réserver un créneau. Vos rendez-vous (en attente, confirmés, passés) s'afficheront ici et dans <strong>Mon profil</strong>.</p>
@@ -218,7 +299,7 @@ require_once __DIR__ . '/partials/header.php';
         <?php else: ?>
             <div style="max-height: 480px; overflow-y: auto; padding-right: 8px;">
             <?php if (!empty($rendez_vous_confirmes)): ?>
-                <h4 style="font-size: 15px; font-weight: 600; color: #28a745; margin: 0 0 12px 0;"><i class="fas fa-check-circle"></i> Confirmés (<?php echo count($rendez_vous_confirmes); ?>)</h4>
+                <h4 id="rdv-confirmes" style="font-size: 15px; font-weight: 600; color: #28a745; margin: 0 0 12px 0;"><i class="fas fa-check-circle"></i> Confirmés (<?php echo count($rendez_vous_confirmes); ?>)</h4>
                 <div style="display: grid; gap: 12px; margin-bottom: 24px;">
                     <?php foreach ($rendez_vous_confirmes as $r): ?>
                         <div class="recent-item" style="padding: 14px 16px; background: #f8fff9; border-left: 4px solid #28a745; border-radius: 8px;">
@@ -240,7 +321,7 @@ require_once __DIR__ . '/partials/header.php';
                 </div>
             <?php endif; ?>
             <?php if (!empty($rendez_vous_attente)): ?>
-                <h4 style="font-size: 15px; font-weight: 600; color: #d39e00; margin: 0 0 12px 0;"><i class="fas fa-clock"></i> En attente de confirmation (<?php echo count($rendez_vous_attente); ?>)</h4>
+                <h4 id="rdv-attente" style="font-size: 15px; font-weight: 600; color: #d39e00; margin: 0 0 12px 0;"><i class="fas fa-clock"></i> En attente de confirmation (<?php echo count($rendez_vous_attente); ?>)</h4>
                 <div style="display: grid; gap: 12px; margin-bottom: 24px;">
                     <?php foreach ($rendez_vous_attente as $r): ?>
                         <div class="recent-item" style="padding: 14px 16px; background: #fffdf5; border-left: 4px solid #ffc107; border-radius: 8px;">
@@ -276,6 +357,46 @@ require_once __DIR__ . '/partials/header.php';
                                 <div class="recent-item-detail" style="margin-top: 6px;">
                                     <strong><?php echo isset($r['Date_rdv']) ? date('d/m/Y à H:i', strtotime($r['Date_rdv'])) : ''; ?></strong>
                                     <div style="margin-top: 6px;"><span class="badge badge-secondary"><?php echo ucfirst($r['Statut'] ?? '—'); ?></span></div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($demandes_en_attente)): ?>
+                <h4 style="font-size: 15px; font-weight: 600; color: #4A90E2; margin: 20px 0 12px 0;"><i class="fas fa-envelope-open-text"></i> Vos demandes de rendez-vous</h4>
+                <div style="display: grid; gap: 12px; margin-bottom: 10px;">
+                    <?php foreach ($demandes_en_attente as $dem): ?>
+                        <?php
+                            $st_dem = trim($dem['statut'] ?? '');
+                            $date_dem = isset($dem['Date_rdv_souhaitee']) && $dem['Date_rdv_souhaitee']
+                                ? date('d/m/Y à H:i', strtotime($dem['Date_rdv_souhaitee']))
+                                : null;
+                            $badge_color = '#ffc107';
+                            $badge_text = 'En attente (accueil / service)';
+                            if ($st_dem === 'traitee') {
+                                $badge_color = '#28a745';
+                                $badge_text = 'Confirmée par le service';
+                            }
+                        ?>
+                        <div class="recent-item" style="padding: 14px 16px; background: #f0f7ff; border-left: 4px solid #4A90E2; border-radius: 8px;">
+                            <div class="recent-item-info">
+                                <div class="recent-item-name">
+                                    <?php echo htmlspecialchars($dem['Nom_service'] ?? 'Demande de rendez-vous'); ?>
+                                </div>
+                                <div class="recent-item-detail" style="margin-top: 6px;">
+                                    <?php if ($date_dem): ?>
+                                        <strong><i class="fas fa-calendar-day"></i> <?php echo htmlspecialchars($date_dem); ?></strong><br>
+                                    <?php endif; ?>
+                                    <?php if (!empty($dem['motif'])): ?>
+                                        <small><i class="fas fa-info-circle"></i>
+                                            <?php echo htmlspecialchars(mb_substr($dem['motif'], 0, 80)) . (mb_strlen($dem['motif']) > 80 ? '…' : ''); ?>
+                                        </small><br>
+                                    <?php endif; ?>
+                                    <span style="display:inline-block; margin-top:6px; padding:4px 10px; border-radius:6px; font-size:12px; background: <?php echo $badge_color; ?>; color:#fff;">
+                                        <?php echo htmlspecialchars($badge_text); ?>
+                                    </span>
                                 </div>
                             </div>
                         </div>

@@ -52,4 +52,15 @@ Ce guide décrit comment un patient peut réserver un rendez-vous dans MediCo.
 
 ---
 
+## D'où viennent les informations pré-remplies ?
+
+Quand vous êtes connecté et que vous voyez « Patient connecté » avec votre nom et votre matricule :
+
+- **Nom et matricule** viennent en priorité de votre **dossier patient** (table PATIENTS) : matricule, prénom, nom enregistrés à l’accueil ou lors de votre inscription.
+- Si le dossier patient n’a pas encore ces champs, le système peut afficher le **nom** et le **matricule** enregistrés dans votre **compte** (lors de la connexion / inscription).
+
+Pour enregistrer un rendez-vous, le système a besoin d’un **identifiant de dossier patient** présent dans la base PATIENTS. Si votre compte n’est pas encore lié à un dossier patient (même email, même matricule), ou si l’identifiant utilisé à l’envoi du formulaire n’est pas le bon, un message du type « dossier non reconnu » ou « patient n’existe pas » peut s’afficher. Dans ce cas, l’accueil peut vérifier que votre compte (email) est bien associé à votre dossier patient en clinique.
+
+---
+
 *Document à usage des patients – MediCo.*

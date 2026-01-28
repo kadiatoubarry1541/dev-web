@@ -418,13 +418,11 @@ if (function_exists('estConnecte') && estConnecte()) {
                                                 </span>
                                             </a>
                                         <?php endif; ?>
-                                        <?php if (hasPermission('view_paiements')): ?>
+                                        <?php if (isset($role) && $role === 'admin'): ?>
                                             <a href="<?php echo $base_path; ?>paiements/liste-paiements.php">
                                                 <i class="fa fa-money"></i>
                                                 <span>Mes Paiements</span>
                                             </a>
-                                        <?php endif; ?>
-                                        <?php if (hasPermission('manage_paiements')): ?>
                                             <a href="<?php echo $base_path; ?>paiements/creer-paiement.php">
                                                 <i class="fa fa-plus-circle"></i>
                                                 <span>Créer un Paiement</span>

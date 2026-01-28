@@ -51,7 +51,7 @@ Ce document définit **exactement** ce que chaque type d'utilisateur peut faire 
 - ✅ **view_patients** : Peut voir les patients de son service uniquement
 - ❌ **manage_services** : Ne peut pas gérer les services
 - ✅ **manage_rendez_vous** : Peut gérer les rendez-vous de son service uniquement
-- ✅ **create_rendez_vous** : Peut créer des rendez-vous pour les patients de son service
+- ❌ **create_rendez_vous** : Ne crée pas les RDV ; la création est assurée par l'accueil (l'admin en secours). Le médecin valide/confirme les RDV.
 - ✅ **manage_consultations** : Peut gérer les consultations de son service
 - ✅ **view_consultations** : Peut voir les consultations de son service
 - ✅ **manage_ordonnances** : Peut créer des ordonnances pour ses patients
@@ -99,7 +99,7 @@ Chaque médecin est filtré par sa `Spécialisation_med` qui correspond au `Nom_
 - ❌ **manage_patients** : Ne peut pas gérer les patients
 - ❌ **manage_services** : Ne peut pas gérer les services
 - ❌ **manage_rendez_vous** : Ne peut pas gérer tous les rendez-vous
-- ✅ **create_rendez_vous** : Peut créer ses propres rendez-vous
+- ❌ **create_rendez_vous** : La création des RDV est faite par l'accueil ; le patient dépose une **demande** que l'accueil traite.
 - ❌ **manage_consultations** : Ne peut pas gérer les consultations
 - ✅ **view_consultations** : Peut voir ses propres consultations uniquement
 - ❌ **manage_ordonnances** : Ne peut pas créer des ordonnances
@@ -121,7 +121,7 @@ Chaque médecin est filtré par sa `Spécialisation_med` qui correspond au `Nom_
 ### Restrictions Importantes
 - **Données personnelles uniquement** : Un patient ne voit QUE ses propres données
 - **Pas de création** : Ne peut pas créer d'ordonnances, consultations, etc.
-- **Lecture seule** : Peut seulement consulter et créer des rendez-vous
+- **Demande de RDV** : Peut déposer une demande sur `/rendez-vous.php` ; l'accueil crée le RDV
 
 ---
 
@@ -137,7 +137,7 @@ Chaque médecin est filtré par sa `Spécialisation_med` qui correspond au `Nom_
 - ✅ **view_patients** : Peut voir les patients
 - ❌ **manage_services** : Ne peut pas gérer les services
 - ❌ **manage_rendez_vous** : Ne peut pas gérer tous les rendez-vous
-- ✅ **create_rendez_vous** : Peut créer des rendez-vous pour les patients
+- ✅ **create_rendez_vous** : Peut créer des rendez-vous pour les patients (rôle principal ; l'admin est là en secours)
 - ❌ **manage_consultations** : Ne peut pas gérer les consultations
 - ❌ **view_consultations** : Ne peut pas voir les consultations
 - ❌ **manage_ordonnances** : Ne peut pas gérer les ordonnances
@@ -158,7 +158,7 @@ Chaque médecin est filtré par sa `Spécialisation_med` qui correspond au `Nom_
 ### Restrictions Importantes
 - **Pas de consultations** : Ne peut pas créer de consultations ou ordonnances
 - **Pas d'approbation** : Ne peut pas approuver les rendez-vous (réservé aux médecins)
-- **Focus patients** : Son rôle principal est la gestion des patients et paiements
+- **Focus patients** : Son rôle principal est la gestion des patients, la **création des rendez-vous** et les paiements. L'administrateur peut créer des RDV en secours (ex. absence de médecin).
 
 ---
 
@@ -205,7 +205,7 @@ Les médecins non approuvés ont des permissions limitées :
 | view_patients | ✅ | ✅* | ❌ | ✅ |
 | manage_services | ✅ | ❌ | ❌ | ❌ |
 | manage_rendez_vous | ✅ | ✅* | ❌ | ❌ |
-| create_rendez_vous | ✅ | ✅* | ✅ | ✅ |
+| create_rendez_vous | ✅ | ❌ | ❌ | ✅ |
 | manage_consultations | ✅ | ✅* | ❌ | ❌ |
 | view_consultations | ✅ | ✅* | ✅** | ❌ |
 | manage_ordonnances | ✅ | ✅* | ❌ | ❌ |

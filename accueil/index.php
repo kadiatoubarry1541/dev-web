@@ -122,6 +122,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_new'])) {
     $date_naissance = $_POST['date_naissance'] ?? null;
     $telephone = trim($_POST['telephone'] ?? '');
     $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $password_confirm = $_POST['password_confirm'] ?? '';
     $adresse = trim($_POST['adresse'] ?? '');
     $sexe = $_POST['sexe'] ?? '';
     $id_service = !empty($_POST['id_service']) ? intval($_POST['id_service']) : null;
@@ -130,8 +132,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_new'])) {
     if (empty($nom) || empty($prenom) || empty($telephone)) {
         $message = "Les champs obligatoires (Nom, Prénom, Téléphone) doivent être remplis.";
         $message_type = "danger";
-    } elseif (!empty($email) && EmailExist($email, 'patient')) {
-        $message = "Cet email est déjà utilisé par un compte existant. Veuillez utiliser un autre email ou laisser vide.";
+    } elseif (empty($email)) {
+        $message = "L'email est obligatoire pour créer un compte patient et lui permettre d'accéder à son espace.";
+        $message_type = "danger";
+    } elseif (EmailExist($email, 'patient')) {
+        $message = "Cet email est déjà utilisé par un compte existant. Veuillez utiliser un autre email.";
+        $message_type = "danger";
+    } elseif (strlen($password) < 8) {
+        $message = "Le mot de passe doit contenir au moins 8 caractères.";
+        $message_type = "danger";
+    } elseif ($password !== $password_confirm) {
+        $message = "Les deux mots de passe ne correspondent pas.";
         $message_type = "danger";
     } elseif (empty($id_service)) {
         $message = "Veuillez sélectionner un service.";
@@ -149,68 +160,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_new'])) {
                 }
             }
             
-            // Si pas de date de naissance, mettre une date par défaut
             if (empty($date_naissance)) {
                 $date_naissance = '1900-01-01';
             }
             
-            // Vérifier que l'email n'existe pas dans PATIENTS
-            if (!empty($email)) {
-                $check_patient_email = $pdo->prepare("SELECT id_patient FROM PATIENTS WHERE Email_patient = ?");
-                $check_patient_email->execute([$email]);
-                if ($check_patient_email->rowCount() > 0) {
-                    throw new Exception("Cet email est déjà utilisé par un patient.");
-                }
+            $check_patient_email = $pdo->prepare("SELECT id_patient FROM PATIENTS WHERE Email_patient = ?");
+            $check_patient_email->execute([$email]);
+            if ($check_patient_email->rowCount() > 0) {
+                throw new Exception("Cet email est déjà utilisé par un patient.");
             }
             
-            // Créer le patient AVEC matricule automatique
             require_once __DIR__ . '/../config/traitement.php';
             $matricule = genererMatriculePatient();
             
             $sql_patient = "INSERT INTO PATIENTS (Matricule_patient, Nom_patient, Prénom_patient, Tel_patient, Email_patient, Date_naissance_patient, Adresse_patient) 
                             VALUES (?, ?, ?, ?, ?, ?, ?)";
             $stmt_patient = $pdo->prepare($sql_patient);
-            $stmt_patient->execute([$matricule, $nom, $prenom, $telephone, $email ?: null, $date_naissance, $adresse ?: null]);
+            $stmt_patient->execute([$matricule, $nom, $prenom, $telephone, $email, $date_naissance, $adresse ?: null]);
             $id_patient = $pdo->lastInsertId();
             
-            // Si un email est fourni, créer aussi un compte utilisateur
-            if (!empty($email)) {
-                // Vérifier que l'email n'existe pas dans users
-                $check_user_email = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-                $check_user_email->execute([$email]);
-                if ($check_user_email->rowCount() == 0) {
-                    // Générer un mot de passe temporaire
-                    $password_temp = bin2hex(random_bytes(4)); // Mot de passe temporaire
-                    $password_hash = password_hash($password_temp, PASSWORD_DEFAULT);
-                    
-                    $nom_complet = trim($nom . ' ' . $prenom);
-                    $sql_user = "INSERT INTO users (nom, email, telephone, password, role, id_patient) 
-                                 VALUES (?, ?, ?, ?, 'patient', ?)";
-                    $stmt_user = $pdo->prepare($sql_user);
-                    $stmt_user->execute([$nom_complet, $email, $telephone, $password_hash, $id_patient]);
-                }
+            // Créer le compte utilisateur avec l'email et le mot de passe fournis (accès à l'espace patient)
+            $check_user_email = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+            $check_user_email->execute([$email]);
+            if ($check_user_email->rowCount() == 0) {
+                $password_hash = password_hash($password, PASSWORD_DEFAULT);
+                $nom_complet = trim($nom . ' ' . $prenom);
+                $sql_user = "INSERT INTO users (nom, email, telephone, password, role, id_patient) 
+                             VALUES (?, ?, ?, ?, 'patient', ?)";
+                $stmt_user = $pdo->prepare($sql_user);
+                $stmt_user->execute([$nom_complet, $email, $telephone, $password_hash, $id_patient]);
             }
             
-            // Inscrire le patient au service
             $sql_service = "INSERT INTO PATIENT_SERVICES (id_patient, id_service, Statut) VALUES (?, ?, 'inscrit')";
             $stmt_service = $pdo->prepare($sql_service);
             $stmt_service->execute([$id_patient, $id_service]);
             
             $pdo->commit();
             
-            // Récupérer le nom du service
             $service = getServiceById($id_service);
             $service_name = $service ? $service['Nom_service'] : '';
             
-            $message = "Le patient <strong>" . htmlspecialchars($nom . ' ' . $prenom) . "</strong> a été créé avec succès (Matricule: <strong>" . htmlspecialchars($matricule) . "</strong>) et inscrit au service : <strong>" . htmlspecialchars($service_name) . "</strong> !";
-            if (!empty($email)) {
-                $message .= " Un compte utilisateur a été créé avec l'email fourni.";
-            }
+            $message = "Le patient <strong>" . htmlspecialchars($nom . ' ' . $prenom) . "</strong> a été créé avec succès (Matricule: <strong>" . htmlspecialchars($matricule) . "</strong>) et inscrit au service : <strong>" . htmlspecialchars($service_name) . "</strong>. Un compte utilisateur a été créé : le patient pourra se connecter avec son email et son mot de passe.";
             $message_type = "success";
             $success = true;
             $mode = 'search';
-            
-            // Réinitialiser les champs
             $_POST = [];
         } catch (PDOException $e) {
             $pdo->rollBack();
@@ -244,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_new'])) {
 	<style>
 		.accueil-container {
 			padding: 40px 0;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: #ffffff;
 			min-height: 100vh;
 		}
 		.form-card {
@@ -252,7 +245,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_new'])) {
 			border-radius: 12px;
 			padding: 40px;
 			margin: 0 auto;
-			box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+			box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+			border: 1px solid #e5e7eb;
 			max-width: 900px;
 		}
 		.page-header {
@@ -498,8 +492,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_new'])) {
 					<p>Recherchez un patient existant ou créez un nouveau compte</p>
 				</div>
 				
-				<div class="user-info">
-					Connecté en tant que : <strong><?php echo htmlspecialchars($user_info['nom']); ?></strong> (Accueil)
+				<div class="user-info" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:15px;">
+					<span>Connecté en tant que : <strong><?php echo htmlspecialchars($user_info['nom']); ?></strong> (Accueil)</span>
+					<a href="demandes-rdv.php" style="padding:8px 16px;background:#667eea;color:white;border-radius:6px;text-decoration:none;font-weight:600;"><i class="fa fa-inbox"></i> Demandes de RDV en attente</a>
 				</div>
 				
 				<?php if ($message): ?>
@@ -626,10 +621,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_new'])) {
 								</div>
 								
 								<div class="form-group">
-									<label>Email (optionnel)</label>
-									<input type="email" name="email" 
+									<label>Email <span class="required">*</span></label>
+									<input type="email" name="email" required 
 										   value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
-									<small style="color: #666; font-size: 13px;">Si fourni, un compte utilisateur sera créé automatiquement</small>
+									<small style="color: #666; font-size: 13px;">Le patient utilisera cet email et son mot de passe pour accéder à son compte.</small>
+								</div>
+							</div>
+							
+							<div class="form-row">
+								<div class="form-group">
+									<label>Mot de passe <span class="required">*</span></label>
+									<input type="password" name="password" required minlength="8" 
+										   placeholder="Minimum 8 caractères" autocomplete="new-password">
+									<small style="color: #666; font-size: 13px;">Minimum 8 caractères. Le patient en aura besoin pour se connecter.</small>
+								</div>
+								
+								<div class="form-group">
+									<label>Confirmer le mot de passe <span class="required">*</span></label>
+									<input type="password" name="password_confirm" required minlength="8" 
+										   placeholder="Resaisir le mot de passe" autocomplete="new-password">
 								</div>
 							</div>
 							

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reçu de Paiement - FACT-20260128-F85E16</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+        }
+        .receipt-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #4A90E2;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #002939;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        .receipt-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .info-section h3 {
+            color: #002939;
+            font-size: 16px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .info-item {
+            margin-bottom: 10px;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            display: inline-block;
+            width: 120px;
+        }
+        .info-value {
+            color: #002939;
+        }
+        .amount-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        .amount-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .amount-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #28a745;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .status-paye {
+            background: #d4edda;
+            color: #155724;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .receipt-container { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="header">
+            <h1>RECU DE PAIEMENT</h1>
+            <p>MediCo. - Clinique Médicale</p>
+        </div>
+        
+        <div class="receipt-info">
+            <div class="info-section">
+                <h3>Informations Patient</h3>
+                <div class="info-item">
+                    <span class="info-label">Nom :</span>
+                    <span class="info-value">boubacar condé</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Matricule :</span>
+                    <span class="info-value">PAT202601240003</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">Téléphone :</span>
+                    <span class="info-value">+224612960764</span>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h3>Informations Paiement</h3>
+                <div class="info-item">
+                    <span class="info-label">N° Facture :</span>
+                    <span class="info-value">FACT-20260128-F85E16</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Date :</span>
+                    <span class="info-value">28/01/2026 à 13:53</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Méthode :</span>
+                    <span class="info-value">Espèces</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Statut :</span>
+                    <span class="info-value">
+                        <span class="status-badge status-paye">Payé</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        
+        <div class="info-section">
+            <h3>Service</h3>
+            <div class="info-item">
+                <span class="info-label">Service :</span>
+                <span class="info-value">Maternité</span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Description :</span>
+                <span class="info-value">Suivi de grossesse et accouchement</span>
+            </div>
+        </div>
+        
+        
+        
+        
+        <div class="amount-section">
+            <div class="amount-label">Montant Total</div>
+            <div class="amount-value">0 GNF</div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Merci pour votre confiance !</strong></p>
+            <p>Ce document est un reçu officiel de paiement.</p>
+            <p>Pour toute question, contactez-nous à contact@medico.fr</p>
+            <p style="margin-top: 20px;">Document généré le 28/01/2026 à 13:53</p>
+        </div>
+    </div>
+</body>
+</html>

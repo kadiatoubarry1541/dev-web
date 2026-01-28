@@ -430,33 +430,6 @@ if ($is_patient) {
                             <?php endif; ?>
                         </div>
                         
-                        <!-- Mes Consultations -->
-                        <div class="dez-box p-a30 border-1 bg-gray m-t30">
-                            <h4 class="h4 m-b20"><i class="fa fa-file-text"></i> Mes Consultations</h4>
-                            <?php if (!empty($consultations)): ?>
-                                <div style="max-height: 400px; overflow-y: auto;">
-                                    <?php foreach (array_slice($consultations, 0, 5) as $consultation): ?>
-                                        <div class="m-b15 p-a15 bg-white border-1">
-                                            <?php if (isset($consultation['Date_consultation'])): ?>
-                                                <p class="m-b5"><strong><?php echo date('d/m/Y à H:i', strtotime($consultation['Date_consultation'])); ?></strong></p>
-                                            <?php endif; ?>
-                                            <?php if (isset($consultation['Prénom_med']) && isset($consultation['Nom_med'])): ?>
-                                                <p class="m-b5 text-primary">Dr. <?php echo htmlspecialchars($consultation['Prénom_med'] . ' ' . $consultation['Nom_med']); ?></p>
-                                            <?php endif; ?>
-                                            <?php if (isset($consultation['Spécialisation_med']) && $consultation['Spécialisation_med']): ?>
-                                                <p class="m-b5"><small><i class="fa fa-stethoscope"></i> <?php echo htmlspecialchars($consultation['Spécialisation_med']); ?></small></p>
-                                            <?php endif; ?>
-                                            <?php if (isset($consultation['Motif_diagnostic']) && $consultation['Motif_diagnostic']): ?>
-                                                <p class="m-b0"><small><strong>Motif :</strong> <?php echo htmlspecialchars(substr($consultation['Motif_diagnostic'], 0, 50)) . (strlen($consultation['Motif_diagnostic']) > 50 ? '...' : ''); ?></small></p>
-                                            <?php endif; ?>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php else: ?>
-                                <p class="text-center">Aucune consultation pour le moment.</p>
-                            <?php endif; ?>
-                        </div>
-                        
                         <!-- Mes Ordonnances -->
                         <div class="dez-box p-a30 border-1 bg-gray m-t30">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">

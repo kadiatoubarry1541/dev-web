@@ -124,7 +124,7 @@ $page_title = $page_title ?? 'Espace Patient';
                 <div class="nav-item">
                     <a href="/ProjetClinique/patient/index.php" class="nav-link <?php echo $page == 'index.php' ? 'active' : ''; ?>">
                         <i class="fas fa-tachometer-alt"></i>
-                        <span>Dashboard</span>
+                        <span>Tableau de bord</span>
                     </a>
                 </div>
                 <div class="nav-item">
@@ -143,12 +143,6 @@ $page_title = $page_title ?? 'Espace Patient';
                     <a href="/ProjetClinique/rendez-vous.php" class="nav-link">
                         <i class="fas fa-calendar-plus"></i>
                         <span>Prendre rendez-vous</span>
-                    </a>
-                </div>
-                <div class="nav-item">
-                    <a href="/ProjetClinique/paiements/liste-paiements.php" class="nav-link">
-                        <i class="fas fa-money-bill-wave"></i>
-                        <span>Mes Paiements</span>
                     </a>
                 </div>
             </div>

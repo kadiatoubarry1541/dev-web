@@ -350,7 +350,7 @@ try {
                 <div class="nav-item">
                     <a href="index.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">
                         <i class="fas fa-tachometer-alt"></i>
-                        <span>Dashboard</span>
+                        <span>Tableau de bord</span>
                     </a>
                 </div>
             </div>
@@ -399,12 +399,6 @@ try {
             <div class="nav-section">
                 <div class="nav-section-title">Rendez-vous</div>
                 <div class="nav-item">
-                    <a href="liste-rendez-vous.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'liste-rendez-vous.php' ? 'active' : ''; ?>">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Calendrier du rendez-vous</span>
-                    </a>
-                </div>
-                <div class="nav-item">
                     <a href="../rendez-vous.php" class="nav-link">
                         <i class="fas fa-plus-circle"></i>
                         <span>Ajouter du rendez-vous</span>
@@ -414,12 +408,6 @@ try {
             
             <div class="nav-section">
                 <div class="nav-section-title">Autres</div>
-                <div class="nav-item">
-                    <a href="liste-consultations.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'liste-consultations.php' ? 'active' : ''; ?>">
-                        <i class="fas fa-stethoscope"></i>
-                        <span>Consultations</span>
-                    </a>
-                </div>
                 <div class="nav-item">
                     <a href="liste-services.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'liste-services.php' ? 'active' : ''; ?>">
                         <i class="fas fa-hospital"></i>
@@ -478,7 +466,7 @@ try {
                 <button class="mobile-menu-toggle" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
                 </button>
-                <h1 class="topbar-title">Dashboard</h1>
+                <h1 class="topbar-title">Tableau de bord</h1>
             </div>
             <div class="topbar-actions">
                 <a href="/ProjetClinique/index.php" class="btn-topbar btn-topbar-secondary">

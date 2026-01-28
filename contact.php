@@ -256,13 +256,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['envoyer'])) {
 					
 					<div class="info-item">
 						<label>Adresse</label>
-						<p>123 Rue de la Sante</p>
-						<p>75000 Paris, France</p>
+						<p>Télico, Préfecture de Mamou</p>
+						<p>République de Guinée</p>
 					</div>
 					
 					<div class="info-item">
 						<label>Téléphone</label>
-						<p>+33 1 23 45 67 89</p>
+						<p>+224 620 00 00 00</p>
 					</div>
 					
 					<div class="info-item">

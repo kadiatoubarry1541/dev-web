@@ -42,6 +42,36 @@ if ($id_med) {
             $mes_patients = getPatientsByMedecin($id_med, $specialisation);
         }
         $stats['patients_total'] = count($mes_patients);
+
+        // Compléter les compteurs avec les DEMANDES du service (même si le RDV n'a pas encore été créé en base)
+        if ($specialisation && function_exists('getIdServiceByNom')) {
+            $id_service_dashboard = getIdServiceByNom($specialisation);
+            if ($id_service_dashboard) {
+                $pdo = bdd();
+                // Demandes en attente (accueil ou service)
+                $stmt_dem_att = $pdo->prepare(
+                    "SELECT COUNT(*) FROM DEMANDE_RENDEZ_VOUS 
+                     WHERE id_service = ? AND statut IN ('en_attente_accueil','en_attente_service')"
+                );
+                $stmt_dem_att->execute([(int)$id_service_dashboard]);
+                $nb_dem_att = (int)$stmt_dem_att->fetchColumn();
+
+                // Demandes déjà confirmées/traitées par le service
+                $stmt_dem_ok = $pdo->prepare(
+                    "SELECT COUNT(*) FROM DEMANDE_RENDEZ_VOUS 
+                     WHERE id_service = ? AND statut = 'traitee'"
+                );
+                $stmt_dem_ok->execute([(int)$id_service_dashboard]);
+                $nb_dem_ok = (int)$stmt_dem_ok->fetchColumn();
+
+                // On ajoute ces volumes aux compteurs "En attente" et "Confirmés"
+                $stats['rdv_planifies'] += $nb_dem_att;
+                $stats['rdv_confirmes'] += $nb_dem_ok;
+
+                // Le total doit au moins refléter toutes les demandes + RDV du service
+                $stats['rdv_total'] = max($stats['rdv_total'], $stats['rdv_planifies'] + $stats['rdv_confirmes']);
+            }
+        }
     } catch (Exception $e) {
         error_log("Erreur dashboard médecin: " . $e->getMessage());
         $mes_rdv = [];
@@ -184,12 +214,9 @@ require_once __DIR__ . '/partials/header.php';
     <div class="quick-actions-card">
         <h3><i class="fas fa-bolt"></i> Actions Rapides</h3>
         <a href="mes-patients.php" class="btn-action"><i class="fas fa-users"></i> Mes Patients (<?php echo $stats['patients_total']; ?>)</a>
-        <a href="mes-rendez-vous.php" class="btn-action"><i class="fas fa-calendar"></i> Mes Rendez-vous</a>
-        <a href="mes-consultations.php" class="btn-action"><i class="fas fa-stethoscope"></i> Mes Consultations</a>
+        <a href="demandes-service.php" class="btn-action"><i class="fas fa-inbox"></i> Demandes à confirmer</a>
         <a href="creer-ordonnance.php" class="btn-action"><i class="fas fa-prescription"></i> Créer une Ordonnance</a>
         <a href="creer-carnet.php" class="btn-action"><i class="fas fa-book-medical"></i> Créer un Carnet</a>
-        <a href="mes-ordonnances.php" class="btn-action"><i class="fas fa-file-medical"></i> Mes Ordonnances</a>
-        <a href="../paiements/liste-paiements.php" class="btn-action payments"><i class="fas fa-money-bill-wave"></i> Paiements</a>
     </div>
 
     <!-- Rendez-vous récents + Info -->
@@ -220,9 +247,6 @@ require_once __DIR__ . '/partials/header.php';
                         </div>
                     </div>
                 <?php endforeach; ?>
-                <?php if (count($mes_rdv) > 5): ?>
-                    <a href="mes-rendez-vous.php" style="display:inline-block; margin-top:12px; color:#4A90E2; font-weight:600; font-size:14px;">Voir tous →</a>
-                <?php endif; ?>
             <?php endif; ?>
         </div>
         <div class="info-card">

@@ -183,7 +183,7 @@ $page_title = $page_title ?? 'Espace Médecin';
                 <div class="nav-item">
                     <a href="index.php" class="nav-link <?php echo $page == 'index.php' ? 'active' : ''; ?>">
                         <i class="fas fa-tachometer-alt"></i>
-                        <span>Dashboard</span>
+                        <span>Tableau de bord</span>
                     </a>
                 </div>
             </div>
@@ -196,15 +196,15 @@ $page_title = $page_title ?? 'Espace Médecin';
                     </a>
                 </div>
                 <div class="nav-item">
-                    <a href="mes-rendez-vous.php" class="nav-link <?php echo $page == 'mes-rendez-vous.php' ? 'active' : ''; ?>">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Mes Rendez-vous</span>
+                    <a href="patients-rendez-vous.php" class="nav-link <?php echo $page == 'patients-rendez-vous.php' ? 'active' : ''; ?>">
+                        <i class="fas fa-user-check"></i>
+                        <span>Patients avec rendez-vous</span>
                     </a>
                 </div>
                 <div class="nav-item">
-                    <a href="mes-consultations.php" class="nav-link <?php echo $page == 'mes-consultations.php' ? 'active' : ''; ?>">
-                        <i class="fas fa-stethoscope"></i>
-                        <span>Mes Consultations</span>
+                    <a href="demandes-service.php" class="nav-link <?php echo $page == 'demandes-service.php' ? 'active' : ''; ?>">
+                        <i class="fas fa-inbox"></i>
+                        <span>Demandes à confirmer</span>
                     </a>
                 </div>
                 <div class="nav-item">
@@ -228,12 +228,6 @@ $page_title = $page_title ?? 'Espace Médecin';
             </div>
             <div class="nav-section">
                 <div class="nav-section-title">Autres</div>
-                <div class="nav-item">
-                    <a href="../paiements/liste-paiements.php" class="nav-link">
-                        <i class="fas fa-money-bill-wave"></i>
-                        <span>Paiements</span>
-                    </a>
-                </div>
             </div>
         </nav>
         <div class="sidebar-footer">
@@ -261,6 +255,11 @@ $page_title = $page_title ?? 'Espace Médecin';
                 <h1 class="topbar-title"><?php echo htmlspecialchars($page_title); ?></h1>
             </div>
             <div class="topbar-actions">
+                <?php if (!empty($_SESSION['admin_impersonate'])): ?>
+                    <a href="/ProjetClinique/admin/retour-admin-depuis-medecin.php" class="btn-topbar btn-topbar-primary" style="background-color:#38a169;">
+                        <i class="fas fa-arrow-left"></i> Retour à l'admin
+                    </a>
+                <?php endif; ?>
                 <a href="/ProjetClinique/index.php" class="btn-topbar btn-topbar-secondary">
                     <i class="fas fa-home"></i> Site Public
                 </a>

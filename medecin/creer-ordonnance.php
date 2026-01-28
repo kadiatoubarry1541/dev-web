@@ -16,8 +16,8 @@ $message_type = '';
 $consultations = [];
 $patients = [];
 $types_consultations = [];
-$patient_par_matricule = null;  // Patient trouvé par recherche matricule (élément clé)
-$matricule_saisi = '';           // Matricule saisi pour affichage/formulaire
+$patient_par_matricule = null;        // Patient trouvé par recherche matricule (élément clé)
+$matricule_saisi = '';                // Matricule saisi pour affichage/formulaire
 $ordonnance_created_id_consultation = null;  // Après création : id pour Imprimer / Envoyer
 
 // Recherche par matricule (GET ou POST recherche) — le matricule est l'élément clé d'identification
@@ -163,24 +163,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['creer_ordonnance'])) 
                 }
                 
                 if ($num_carnet) {
-                    // Créer une consultation pour ce patient
+                    // Créer une consultation pour ce patient en utilisant la fonction centrale
                     $date_consultation = date('Y-m-d H:i:s');
                     $motif = "Ordonnance médicale - " . $specialisation;
                     $note = "Consultation créée automatiquement lors de la création d'une ordonnance.";
-                    
-                    $sql_consultation = "INSERT INTO CONSULTATION (Date_consultation, Motif_diagnostic, Note, id_patient, id_med, Num_carnet, Statut) 
-                                         VALUES (?, ?, ?, ?, ?, ?, 'terminée')";
-                    $stmt_consultation = $pdo->prepare($sql_consultation);
-                    $stmt_consultation->execute([$date_consultation, $motif, $note, $id_patient, $id_med, $num_carnet]);
-                    $id_consultation = $pdo->lastInsertId();
+
+                    // Utilise la fonction utilitaire (gère les différences de schéma / contraintes)
+                    creerConsultation($date_consultation, $motif, $id_patient, $id_med, $num_carnet, $note);
+
+                    // Récupérer l'ID de la consultation tout juste créée
+                    $sql_last = "SELECT id_consultation 
+                                 FROM CONSULTATION 
+                                 WHERE id_patient = ? AND id_med = ? AND Num_carnet = ?
+                                 ORDER BY Date_consultation DESC 
+                                 LIMIT 1";
+                    $stmt_last = $pdo->prepare($sql_last);
+                    $stmt_last->execute([$id_patient, $id_med, $num_carnet]);
+                    $row_last = $stmt_last->fetch(PDO::FETCH_ASSOC);
+                    $id_consultation = $row_last['id_consultation'] ?? null;
                 } else {
-                    $message = "Impossible de créer un carnet pour le patient. Veuillez contacter l'administrateur.";
+                    $message = "Impossible de créer un carnet pour le patient. Veuillez réessayer ou signaler ce problème à l'équipe responsable.";
                     $message_type = "danger";
                 }
             }
         } catch (Exception $e) {
+            // Log interne détaillé ET afficher le message technique pour diagnostic
             error_log("Erreur création consultation automatique: " . $e->getMessage());
-            $message = "Une erreur est survenue lors de la création de la consultation : " . $e->getMessage();
+            $message = "Une erreur technique est survenue lors de la création de la consultation. "
+                     . "Détail technique : " . $e->getMessage();
             $message_type = "danger";
         }
     }
@@ -244,9 +254,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['creer_ordonnance'])) 
                 
                 $message = "Ordonnance créée avec succès ! " . $success_count . " médicament(s) ajouté(s).";
                 if ($patient_info) {
-                    $message .= " Patient : " . htmlspecialchars($patient_info['Prénom_patient'] . ' ' . $patient_info['Nom_patient']) . " (matricule " . htmlspecialchars($patient_info['Matricule_patient'] ?? '') . "). Vous pouvez imprimer l'ordonnance ou l'envoyer au patient.";
+                    $message .= " Patient : " . htmlspecialchars($patient_info['Prénom_patient'] . ' ' . $patient_info['Nom_patient']) . " (matricule " . htmlspecialchars($patient_info['Matricule_patient'] ?? '') . "). Vous pouvez imprimer l'ordonnance et la remettre au patient.";
                 } else {
-                    $message .= " Vous pouvez imprimer l'ordonnance ou l'envoyer au patient.";
+                    $message .= " Vous pouvez imprimer l'ordonnance et la remettre au patient.";
                 }
                 $message_type = "success";
                 // Réinitialiser le formulaire
@@ -466,19 +476,6 @@ $durees_courantes = [
 		.btn-submit:hover {
 			background: #357ABD;
 		}
-		.btn-envoyer-ord {
-			background: #28a745;
-			color: white;
-			border: none;
-			padding: 12px 24px;
-			border-radius: 6px;
-			cursor: pointer;
-			font-weight: 600;
-			font-size: 14px;
-		}
-		.btn-envoyer-ord:hover {
-			background: #218838;
-		}
 		.medicament-suggestions {
 			background: #fff;
 			border: 1px solid #ddd;
@@ -572,7 +569,7 @@ $durees_courantes = [
 					
 					<div class="info-box">
 						<strong>Service :</strong> <?php echo htmlspecialchars($specialisation); ?><br>
-						<small>Identifiez le patient par son <strong>matricule</strong> (élément clé) ou choisissez-le dans la liste. Vous pourrez ensuite imprimer l'ordonnance ou l'envoyer au patient.</small>
+						<small>Identifiez le patient par son <strong>matricule</strong> (élément clé) ou choisissez-le dans la liste. Vous pourrez ensuite <strong>imprimer l'ordonnance et la remettre au patient</strong>.</small>
 					</div>
 					
 					<?php if ($message): ?>
@@ -583,13 +580,8 @@ $durees_courantes = [
 									<button type="button" class="btn-submit" onclick="window.open('imprimer-ordonnance.php?id_consultation=<?php echo (int)$ordonnance_created_id_consultation; ?>&auto=1', 'impression_ordonnance', 'width=800,height=700,scrollbars=yes,resizable=yes');">
 										<i class="fa fa-print"></i> Imprimer l'ordonnance
 									</button>
-									<?php if (hasPermission('send_ordonnances')): ?>
-										<button type="button" class="btn-envoyer-ord" data-id-consultation="<?php echo (int)$ordonnance_created_id_consultation; ?>">
-											<i class="fa fa-paper-plane"></i> Envoyer au patient
-										</button>
-									<?php endif; ?>
 									<a href="mes-ordonnances.php" class="btn-retour" style="margin-bottom: 0;">
-										<i class="fa fa-list"></i> Voir mes ordonnances
+										<i class="fa fa-list"></i> Historique des ordonnances
 									</a>
 								</div>
 							<?php endif; ?>
@@ -657,7 +649,7 @@ $durees_courantes = [
 									<?php endif; ?>
 								</select>
 								<small style="color: #666; display: block; margin-top: 5px;">
-									<i class="fa fa-info-circle"></i> Utilisez le <strong>matricule</strong> pour identifier le patient, ou sélectionnez-le dans la liste. Après création, vous pourrez <strong>imprimer</strong> ou <strong>envoyer</strong> l'ordonnance au patient.
+									<i class="fa fa-info-circle"></i> Utilisez le <strong>matricule</strong> pour identifier le patient, ou sélectionnez-le dans la liste. Après création, vous pourrez <strong>imprimer</strong> l'ordonnance et la remettre au patient. L'historique de vos ordonnances sera accessible dans l'onglet dédié.
 								</small>
 								<?php if (empty($patients) && !$patient_par_matricule): ?>
 									<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px; margin-top: 10px; color: #856404;">
@@ -671,22 +663,10 @@ $durees_courantes = [
 										</small>
 									</div>
 								<?php elseif ($patient_par_matricule && empty($patients)): ?>
-									<small style="color: #0c5460; display: block; margin-top: 8px;"><i class="fa fa-info-circle"></i> Patient identifié par matricule. Vous pouvez créer l'ordonnance et l'envoyer directement dans son espace.</small>
-								<?php endif; ?>
-							</div>
-							
-							<div class="form-group" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-								<label for="id_consultation">Sélectionner une Consultation (Optionnel)</label>
-								<select name="id_consultation" id="id_consultation" class="form-control">
-									<option value="">-- Choisir une consultation (optionnel) --</option>
-								</select>
-								<small style="color: #666; display: block; margin-top: 5px;">
-									<i class="fa fa-info-circle"></i> Si aucune consultation n'est sélectionnée, une consultation sera automatiquement créée pour le patient choisi.
-								</small>
-								<?php if (empty($consultations)): ?>
-									<div style="background: #e7f3ff; border: 1px solid #4A90E2; border-radius: 6px; padding: 12px; margin-top: 10px; color: #004085;">
-										<small><i class="fa fa-info-circle"></i> <strong>Information :</strong> Aucune consultation existante trouvée. Une nouvelle consultation sera automatiquement créée lorsque vous sélectionnerez un patient et créerez l'ordonnance.</small>
-									</div>
+									<small style="color: #0c5460; display: block; margin-top: 8px;">
+										<i class="fa fa-info-circle"></i>
+										Patient identifié par matricule. Vous pouvez créer l'ordonnance, l'imprimer et la remettre directement au patient.
+									</small>
 								<?php endif; ?>
 							</div>
 						</div>
@@ -771,185 +751,6 @@ $durees_courantes = [
 // Données des médicaments
 const medicamentsData = <?php echo json_encode($medicaments_courants); ?>;
 let medicamentIndex = 1;
-
-// Envoyer l'ordonnance au patient (bouton affiché après création)
-document.addEventListener('click', function(e) {
-	var btn = e.target.closest && e.target.closest('.btn-envoyer-ord');
-	if (!btn) return;
-	var idConsultation = btn.getAttribute('data-id-consultation');
-	if (!idConsultation) return;
-	var origHtml = btn.innerHTML;
-	btn.disabled = true;
-	btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Envoi...';
-	fetch('envoyer-ordonnance.php', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-		body: 'id_consultation=' + idConsultation
-	})
-	.then(function(r) { return r.json(); })
-	.then(function(data) {
-		if (data.success) {
-			btn.innerHTML = '<i class="fa fa-check"></i> Envoyé';
-			btn.style.background = '#28a745';
-		} else {
-			btn.innerHTML = origHtml;
-			btn.disabled = false;
-			alert(data.message || 'Erreur lors de l\'envoi.');
-		}
-	})
-	.catch(function() {
-		btn.innerHTML = origHtml;
-		btn.disabled = false;
-		alert('Erreur réseau lors de l\'envoi.');
-	});
-});
-
-// Données des consultations avec leurs patients
-const consultationsData = <?php echo json_encode($consultations); ?>;
-// Service du médecin connecté pour filtrer les consultations
-const currentService = <?php echo json_encode($specialisation); ?>;
-
-// Initialiser la liste des consultations au chargement
-function initConsultationsList() {
-    const consultationSelect = document.getElementById('id_consultation');
-    const patientSelect = document.getElementById('id_patient');
-    const selectedPatientId = patientSelect.value;
-    
-    // Réinitialiser les options de consultation
-    consultationSelect.innerHTML = '<option value="">-- Choisir une consultation (optionnel) --</option>';
-    
-    // Filtrer les consultations par service ET par patient si un patient est sélectionné
-    let filteredConsultations = consultationsData;
-    
-    // Filtrer par service (s'assurer que la consultation appartient au service du médecin)
-    if (currentService) {
-        filteredConsultations = filteredConsultations.filter(c => {
-            // Vérifier que la consultation appartient au service actuel
-            const consultationService = c.Nom_service || c.Spécialisation_med || '';
-            return consultationService === currentService;
-        });
-    }
-    
-    // Filtrer par patient si un patient est sélectionné
-    if (selectedPatientId) {
-        filteredConsultations = filteredConsultations.filter(c => c.id_patient == selectedPatientId);
-        
-        if (filteredConsultations.length > 0) {
-            const optgroup = document.createElement('optgroup');
-            optgroup.label = 'Consultations existantes pour ce patient dans votre service';
-            
-            filteredConsultations.forEach(consultation => {
-                const option = document.createElement('option');
-                option.value = consultation.id_consultation;
-                let text = '';
-                if (consultation.Date_consultation) {
-                    const date = new Date(consultation.Date_consultation);
-                    text = date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
-                }
-                if (consultation.Motif_diagnostic) {
-                    text += (text ? ' - ' : '') + consultation.Motif_diagnostic.substring(0, 50);
-                }
-                option.textContent = text || 'Consultation';
-                optgroup.appendChild(option);
-            });
-            
-            consultationSelect.appendChild(optgroup);
-        }
-    } else {
-        // Afficher toutes les consultations du service avec le nom du patient
-        if (filteredConsultations.length > 0) {
-            const optgroup = document.createElement('optgroup');
-            optgroup.label = 'Toutes les consultations de votre service';
-            
-            filteredConsultations.forEach(consultation => {
-                const option = document.createElement('option');
-                option.value = consultation.id_consultation;
-                let text = '';
-                if (consultation.Prénom_patient && consultation.Nom_patient) {
-                    text = consultation.Prénom_patient + ' ' + consultation.Nom_patient;
-                }
-                if (consultation.Date_consultation) {
-                    const date = new Date(consultation.Date_consultation);
-                    text += (text ? ' - ' : '') + date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
-                }
-                option.textContent = text || 'Consultation';
-                optgroup.appendChild(option);
-            });
-            
-            consultationSelect.appendChild(optgroup);
-        }
-    }
-}
-
-// Remplir le sélecteur de consultations avec une liste (utilisée après chargement AJAX)
-function fillConsultationSelect(consultations, groupLabel) {
-    const consultationSelect = document.getElementById('id_consultation');
-    consultationSelect.innerHTML = '<option value="">-- Choisir une consultation (optionnel) --</option>';
-    if (!consultations || consultations.length === 0) return;
-    const optgroup = document.createElement('optgroup');
-    optgroup.label = groupLabel || 'Consultations existantes pour ce patient';
-    consultations.forEach(function(consultation) {
-        const option = document.createElement('option');
-        option.value = consultation.id_consultation;
-        let text = '';
-        if (consultation.Date_consultation) {
-            const date = new Date(consultation.Date_consultation);
-            text = date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
-        }
-        if (consultation.Motif_diagnostic) {
-            text += (text ? ' - ' : '') + (consultation.Motif_diagnostic || '').substring(0, 50);
-        }
-        option.textContent = text || 'Consultation';
-        optgroup.appendChild(option);
-    });
-    consultationSelect.appendChild(optgroup);
-}
-
-// Filtrer les consultations selon le patient sélectionné ; si un patient est choisi, charger ses consultations via AJAX
-document.getElementById('id_patient').addEventListener('change', function() {
-    var selectedPatientId = this.value;
-    var consultationSelect = document.getElementById('id_consultation');
-    if (selectedPatientId) {
-        consultationSelect.innerHTML = '<option value="">Chargement des consultations...</option>';
-        consultationSelect.disabled = true;
-        fetch('get-consultations-patient.php?id_patient=' + encodeURIComponent(selectedPatientId))
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                consultationSelect.disabled = false;
-                if (data.success && data.consultations && data.consultations.length > 0) {
-                    fillConsultationSelect(data.consultations, 'Consultations existantes pour ce patient');
-                } else {
-                    initConsultationsList();
-                }
-            })
-            .catch(function() {
-                consultationSelect.disabled = false;
-                initConsultationsList();
-            });
-    } else {
-        initConsultationsList();
-    }
-});
-
-// Préremplir le patient si une consultation est sélectionnée (mais permettre de changer)
-document.getElementById('id_consultation').addEventListener('change', function() {
-    const selectedConsultationId = this.value;
-    const patientSelect = document.getElementById('id_patient');
-    
-    if (selectedConsultationId && !selectedConsultationId.startsWith('type_')) {
-        // Trouver le patient de cette consultation
-        const consultation = consultationsData.find(c => c.id_consultation == selectedConsultationId);
-        if (consultation && consultation.id_patient) {
-            // Préremplir le patient mais ne pas bloquer si l'utilisateur veut changer
-            if (!patientSelect.value || patientSelect.value == '') {
-                patientSelect.value = consultation.id_patient;
-            }
-        }
-    }
-});
-
-// Initialiser la liste au chargement
-initConsultationsList();
 
 // Validation du formulaire : patient identifié par matricule OU sélection dans la liste
 document.getElementById('ordonnanceForm').addEventListener('submit', function(e) {

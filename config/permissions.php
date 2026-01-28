@@ -82,7 +82,7 @@ $ROLES_PERMISSIONS = [
             'manage_patients' => false,
             'manage_services' => false,
             'manage_rendez_vous' => false,  // Ne peut pas gérer tous les RDV
-            'create_rendez_vous' => true,  // Peut créer des demandes de RDV
+            'create_rendez_vous' => true,  // Peut créer ses propres rendez-vous / demandes
             'manage_consultations' => false,  // Ne peut pas gérer les consultations
             'view_consultations' => true,  // Peut voir ses propres consultations
             'manage_ordonnances' => false,
@@ -194,7 +194,9 @@ function isAdmin() {
  * Vérifier si l'utilisateur est médecin
  */
 function isMedecin() {
-    return hasRole('medecin');
+    // On considère qu'un administrateur a aussi tous les droits
+    // de visibilité d'un médecin.
+    return hasRole('medecin') || hasRole('admin');
 }
 
 /**
@@ -248,7 +250,11 @@ function requireAdmin($redirect = 'index.php') {
  * Rediriger si l'utilisateur n'est pas médecin
  */
 function requireMedecin($redirect = 'index.php') {
-    requireRole('medecin', $redirect);
+    // Autoriser l'accès soit aux médecins, soit à l'administrateur
+    if (!hasRole('medecin') && !hasRole('admin')) {
+        header('Location: ' . $redirect);
+        exit();
+    }
 }
 
 /**

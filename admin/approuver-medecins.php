@@ -1,12 +1,16 @@
 <?php
-require_once 'partials/header.php';
 require_once '../config/bdd.php';
+require_once '../config/session.php';
+require_once '../config/permissions.php';
 require_once '../config/traitement.php';
+
+requireLogin('../login.php');
+requireAdmin('index.php');
 
 $message = '';
 $message_type = '';
 
-// Traiter l'approbation/refus
+// Traiter l'approbation/refus (avant tout output, pour permettre header Location)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $id_med = intval($_POST['id_med'] ?? 0);
     $action = $_POST['action'] ?? '';
@@ -99,6 +103,8 @@ try {
     $message_type = "danger";
     error_log("Erreur approuver-medecins: " . $e->getMessage());
 }
+
+require_once 'partials/header.php';
 ?>
 
 <style>

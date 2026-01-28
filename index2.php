@@ -52,7 +52,7 @@
                         <ul class="social-line text-center pull-right">
                             <li><a href="javascript:void(0);"><i class="fa fa-phone"></i> <span>+0 123-456-7890</span> </a></li>
                             <li><a href="javascript:void(0);"><i class="fa fa-clock-o"></i> <span>info@example.com</span></a></li>
-                            <li><a href="javascript:void(0);"><i class="fa fa-envelope-o"></i> <span>Mon - Fri: 08.00 - 17.00</span></a></li>
+                            <li><a href="javascript:void(0);"><i class="fa fa-envelope-o"></i> <span>Lun - Ven : 08h00 - 17h00</span></a></li>
                         </ul>
                     </div>
                     <div class="dez-topbar-right">
@@ -96,7 +96,7 @@
                     <div class="header-nav navbar-collapse collapse justify-content-end" id="navbarNavDropdown">
                         <ul class="nav navbar-nav">
 							<li class="active"> 
-								<a href="javascript:;">Home<i class="fa fa-chevron-down"></i></a>
+								<a href="javascript:;">Accueil<i class="fa fa-chevron-down"></i></a>
 								<ul class="sub-menu">
 										<li><a href="index.html">1. Dentist </a></li>
 										<li><a href="index-2.html">2. ENT Hospital</a></li>
@@ -107,9 +107,9 @@
 										<li><a href="index-7.html">7. COVID-19 </a></li>
 									</ul>
 							</li>
-							<li> <a href="javascript:;">Features<i class="fa fa-chevron-down"></i></a>
+							<li> <a href="javascript:;">Fonctionnalités<i class="fa fa-chevron-down"></i></a>
 								<ul class="sub-menu">
-									<li> <a href="javascript:;">Header Style Light</a>
+									<li> <a href="javascript:;">En-tête clair</a>
 										<ul class="sub-menu">
 											<li><a href="header-style-1.html">Header 1</a></li>
 											<li><a href="header-style-2.html">Header 2</a></li>
@@ -119,7 +119,7 @@
 											<li><a href="header-style-6.html">Header 6</a></li>
 										</ul>
 									</li>
-									<li> <a href="javascript:;">Header Style Dark</a>
+									<li> <a href="javascript:;">En-tête sombre</a>
 										<ul class="sub-menu">
 											<li><a href="header-style-1-dark.html">Header 1</a></li>
 											<li><a href="header-style-2-dark.html">Header 2</a></li>
@@ -129,7 +129,7 @@
 											<li><a href="header-style-6-dark.html">Header 6</a></li>
 										</ul>
 									</li>
-									<li> <a href="javascript:;">Footer</a>
+									<li> <a href="javascript:;">Pied de page</a>
 										<ul class="sub-menu">
 											<li><a href="footer-1.html">Footer 1 </a></li>
 											<li><a href="footer-2.html">Footer 2</a></li>
@@ -148,7 +148,7 @@
 							</li>
 							<li> <a href="javascript:;">Pages<i class="fa fa-chevron-down"></i></a>
 								<ul class="sub-menu">
-									<li> <a href="javascript:;">About us</a>
+									<li> <a href="javascript:;">À propos</a>
 										<ul class="sub-menu">
 											<li><a href="about-1.html">About us 1</a></li>
 											<li><a href="about-2.html">About us 2</a></li>
@@ -167,10 +167,10 @@
 											<li><a href="services-3.html">Services 3</a></li>
 										</ul>
 									</li>
-									<li><a href="career.html">Career</a></li>
-									<li><a href="who-we-are.html">Who we are</a></li>
-									<li><a href="help.html">Help Desk</a></li>
-									<li><a href="privacy-policy.html">Privacy Policy</a></li>
+									<li><a href="career.html">Carrière</a></li>
+									<li><a href="who-we-are.html">Qui sommes-nous</a></li>
+									<li><a href="help.html">Support</a></li>
+									<li><a href="privacy-policy.html">Politique de confidentialité</a></li>
 									<li> <a href="javascript:;">Portfolio</a>
 										<ul class="sub-menu">
 											<li><a href="portfolio-1.html">Portfolio 1</a></li>
@@ -179,7 +179,7 @@
 											<li><a href="portfolio-details.html">portfolio-details</a></li>
 										</ul>
 									</li>
-									<li> <a href="javascript:;">Gallery</a>
+									<li> <a href="javascript:;">Galerie</a>
 										<ul class="sub-menu">
 											<li><a href="full-page-gallery-dark.html">Gallery Full Page Style 1</a></li>
 											<li><a href="full-page-gallery-light.html">Gallery Full Page Style 2</a></li>
@@ -188,26 +188,26 @@
 											<li><a href="gallery-grid-4.html">Gallery Grid 4</a></li>
 										</ul>
 									</li>
-									<li> <a href="javascript:;">Error</a>
+									<li> <a href="javascript:;">Erreurs</a>
 										<ul class="sub-menu">
 											<li><a href="error-403.html">Error 403</a></li>
 											<li><a href="error-404.html">Error 404</a></li>
 											<li><a href="error-405.html">Error 405</a></li>
 										</ul>
 									</li>
-									<li> <a href="javascript:;">Coming Soon</a>
+									<li> <a href="javascript:;">Bientôt disponible</a>
 										<ul class="sub-menu">
 											<li><a href="coming-soon-1.html">Coming Soon 1</a></li>
 											<li><a href="coming-soon-2.html">Coming Soon 2</a></li>
 										</ul>
 									</li>
-									<li> <a href="javascript:;">Login Page</a>
+									<li> <a href="javascript:;">Page de connexion</a>
 										<ul class="sub-menu">
 											<li><a href="login-1.html">Login 1</a></li>
 											<li><a href="login-2.html">Login 2</a></li>
 										</ul>
 									</li>
-									<li> <a href="javascript:;">Contact us</a>
+									<li> <a href="javascript:;">Contact</a>
 										<ul class="sub-menu right">
 											<li><a href="contact.html">Contact us 1</a></li>
 											<li><a href="contact-2.html">Contact us 2</a></li>
@@ -217,85 +217,85 @@
 									</li>
 								</ul>
 							</li>
-							<li> <a href="javascript:;">Shop<i class="fa fa-chevron-down"></i></a>
+							<li> <a href="javascript:;">Boutique<i class="fa fa-chevron-down"></i></a>
 								<ul class="sub-menu">
-									<li><a href="product.html">Product</a></li>
-									<li><a href="product-details.html">Product details</a></li>
+									<li><a href="product.html">Produit</a></li>
+									<li><a href="product-details.html">Détails du produit</a></li>
 								</ul>
 							</li>
 							<li> <a href="javascript:;">Blog<i class="fa fa-chevron-down"></i></a>
 									<ul class="sub-menu">
-										<li> <a href="javascript:;">list</a>
+										<li> <a href="javascript:;">Liste</a>
 											<ul class="sub-menu right">
-												<li><a href="blog-list-no-sidebar.html">blog list no sidebar</a></li>
-												<li><a href="blog-list-right-sidebar.html">blog list right sidebar</a></li>
-												<li><a href="blog-list-left-sidebar.html">blog list left sidebar</a></li>
-												<li><a href="blog-list-both-sidebar.html">Both Sidebar</a></li>
+												<li><a href="blog-list-no-sidebar.html">Liste sans barre latérale</a></li>
+												<li><a href="blog-list-right-sidebar.html">Liste barre à droite</a></li>
+												<li><a href="blog-list-left-sidebar.html">Liste barre à gauche</a></li>
+												<li><a href="blog-list-both-sidebar.html">Double barre latérale</a></li>
 											</ul>
 										</li>
-										<li> <a href="javascript:;">Grid</a>
+										<li> <a href="javascript:;">Grille</a>
 											<ul class="sub-menu right">
-												<li><a href="blog-grid-no-sidebar.html">blog grid no sidebar</a></li>
-												<li><a href="blog-grid-right-sidebar.html">blog grid right sidebar</a></li>
-												<li><a href="blog-grid-left-sidebar.html">blog grid left sidebar</a></li>
-												<li><a href="blog-grid-both-sidebar.html">Both Sidebar</a></li>
-												<li><a href="blog-grid-wide-sidebar.html">Wide Sidebar</a></li>
+												<li><a href="blog-grid-no-sidebar.html">Grille sans barre latérale</a></li>
+												<li><a href="blog-grid-right-sidebar.html">Grille barre à droite</a></li>
+												<li><a href="blog-grid-left-sidebar.html">Grille barre à gauche</a></li>
+												<li><a href="blog-grid-both-sidebar.html">Double barre latérale</a></li>
+												<li><a href="blog-grid-wide-sidebar.html">Barre latérale large</a></li>
 											</ul>
 										</li>
-										<li> <a href="javascript:;">Single</a>
+										<li> <a href="javascript:;">Article</a>
 											<ul class="sub-menu right">
-												<li><a href="blog-single.html">Single</a></li>
-												<li><a href="blog-single-right-sidebar.html">Single Right sidebar</a></li>
-												<li><a href="blog-single-left-sidebar.html">Single left sidebar</a></li>
+												<li><a href="blog-single.html">Article seul</a></li>
+												<li><a href="blog-single-right-sidebar.html">Article barre à droite</a></li>
+												<li><a href="blog-single-left-sidebar.html">Article barre à gauche</a></li>
 											</ul>
 										</li>
-										<li> <a href="javascript:;">Full Page Blog</a>
+										<li> <a href="javascript:;">Blog pleine page</a>
 											<ul class="sub-menu right">
-												<li><a href="blog-full-grid-dark-style-1.html">Dark Style 1</a></li>
-												<li><a href="blog-full-grid-dark-style-2.html">Dark Style 2</a></li>
-												<li><a href="blog-full-grid-dark-style-3.html">Dark Style 3</a></li>
-												<li><a href="blog-full-grid-light-style-1.html">Light Style 1</a></li>
-												<li><a href="blog-full-grid-light-style-2.html">Light Style 2</a></li>
-												<li><a href="blog-full-grid-light-style-3.html">Light Style 3</a></li>
+												<li><a href="blog-full-grid-dark-style-1.html">Style sombre 1</a></li>
+												<li><a href="blog-full-grid-dark-style-2.html">Style sombre 2</a></li>
+												<li><a href="blog-full-grid-dark-style-3.html">Style sombre 3</a></li>
+												<li><a href="blog-full-grid-light-style-1.html">Style clair 1</a></li>
+												<li><a href="blog-full-grid-light-style-2.html">Style clair 2</a></li>
+												<li><a href="blog-full-grid-light-style-3.html">Style clair 3</a></li>
 											</ul>
 										</li>
 									</ul>
 								</li>
-								<li class="has-mega-menu "> <a href="javascript:;">Post Layout<i class="fa fa-chevron-down"></i></a>
+								<li class="has-mega-menu "> <a href="javascript:;">Mises en page<i class="fa fa-chevron-down"></i></a>
 									<ul class="mega-menu">
-										<li> <a href="javascript:;">Side Bar</a>
+										<li> <a href="javascript:;">Barre latérale</a>
 											<ul>
-												<li><a href="post-left-sidebar.html">Left Sidebar</a></li>
-												<li><a href="post-right-sidebar.html">Right Sidebar</a></li>
-												<li><a href="post-both-sidebar.html">Both Sidebar<span class="new-page">New</span></a></li>
-												<li><a href="post-no-sidebar.html">No Sidebar</a></li>
+												<li><a href="post-left-sidebar.html">Barre à gauche</a></li>
+												<li><a href="post-right-sidebar.html">Barre à droite</a></li>
+												<li><a href="post-both-sidebar.html">Double barre<span class="new-page">Nouveau</span></a></li>
+												<li><a href="post-no-sidebar.html">Sans barre latérale</a></li>
 											</ul>
 										</li>
-										<li> <a href="javascript:;">Post Types</a>
+										<li> <a href="javascript:;">Types d'articles</a>
 											<ul>
-												<li><a href="post-text.html">Text Post</a></li>
-												<li><a href="post-image.html">Image Post</a></li>
-												<li><a href="post-video.html">Video Post</a></li>
-												<li><a href="post-link.html">Link Post</a></li>
-												<li><a href="post-audio.html">Audio Post</a></li>
-												<li><a href="post-quote.html">Post Quote</a></li>
-												<li><a href="post-tutorial.html">Tutorial Post<span class="new-page">New</span></a></li>
-												<li><a href="post-cateloge.html">Cateloge Post<span class="new-page">New</span></a></li>
+												<li><a href="post-text.html">Article texte</a></li>
+												<li><a href="post-image.html">Article image</a></li>
+												<li><a href="post-video.html">Article vidéo</a></li>
+												<li><a href="post-link.html">Article lien</a></li>
+												<li><a href="post-audio.html">Article audio</a></li>
+												<li><a href="post-quote.html">Citation</a></li>
+												<li><a href="post-tutorial.html">Tutoriel<span class="new-page">Nouveau</span></a></li>
+												<li><a href="post-cateloge.html">Catalogue<span class="new-page">Nouveau</span></a></li>
 											</ul>
 										</li>
-										<li> <a href="javascript:;">Multiple Media</a>
+										<li> <a href="javascript:;">Médias multiples</a>
 											<ul>	
-												<li><a href="post-banner.html">Banner<span class="new-page">New</span></a></li>
-												<li><a href="post-slide-show.html">Slider</a></li>
-												<li><a href="post-gallery.html">Gallery</a></li>
-												<li><a href="post-status.html">Status Slider<span class="new-page">New</span></a></li>
+												<li><a href="post-banner.html">Bannière<span class="new-page">Nouveau</span></a></li>
+												<li><a href="post-slide-show.html">Diaporama</a></li>
+												<li><a href="post-gallery.html">Galerie</a></li>
+												<li><a href="post-status.html">Statut<span class="new-page">Nouveau</span></a></li>
 											</ul>
 										</li>
-										<li> <a href="javascript:;">Post Layout Type</a>
+										<li> <a href="javascript:;">Types de mise en page</a>
 											<ul>	
-												<li><a href="post-standard.html">Standard Post</a></li>
-												<li><a href="post-side.html">Side Post<span class="new-page">New</span></a></li>
-												<li><a href="post-corner.html">Corner Post<span class="new-page">New</span></a></li>
+												<li><a href="post-standard.html">Article standard</a></li>
+												<li><a href="post-side.html">Article latéral<span class="new-page">Nouveau</span></a></li>
+												<li><a href="post-corner.html">Article en coin<span class="new-page">Nouveau</span></a></li>
 											</ul>
 										</li>
 									</ul>
@@ -304,37 +304,37 @@
 								<ul class="mega-menu">
 									<li> <a href="javascript:;">Shortcodes</a>
 										<ul>
-											<li><a href="shortcode-buttons.html">Buttons</a></li>
-											<li><a href="shortcode-icon-box-styles.html">Icon box styles</a></li>
-											<li><a href="shortcode-pricing-table.html">Pricing table</a></li>
-											<li><a href="shortcode-toggles.html">Toggles</a></li>
-											<li><a href="shortcode-team.html">Team</a></li>
+											<li><a href="shortcode-buttons.html">Boutons</a></li>
+											<li><a href="shortcode-icon-box-styles.html">Styles d'icônes</a></li>
+											<li><a href="shortcode-pricing-table.html">Tableaux de prix</a></li>
+											<li><a href="shortcode-toggles.html">Accordéons</a></li>
+											<li><a href="shortcode-team.html">Équipe</a></li>
 										</ul>
 									</li>
 									<li> <a href="javascript:;">Shortcodes</a>
 										<ul>
-											<li><a href="shortcode-carousel-sliders.html">Carousel sliders</a></li>
-											<li><a href="shortcode-image-box-content.html">Image box content</a></li>
-											<li><a href="shortcode-tabs.html">Tabs</a></li>
-											<li><a href="shortcode-counters.html">Counters</a></li>
-											<li><a href="shortcode-light-box.html">Light Gallery </a></li>
+											<li><a href="shortcode-carousel-sliders.html">Carrousels</a></li>
+											<li><a href="shortcode-image-box-content.html">Blocs d'images</a></li>
+											<li><a href="shortcode-tabs.html">Onglets</a></li>
+											<li><a href="shortcode-counters.html">Compteurs</a></li>
+											<li><a href="shortcode-light-box.html">Galerie lightbox</a></li>
 										</ul>
 									</li>
 									<li> <a href="javascript:;">Shortcodes</a>
 										<ul>
-											<li><a href="shortcode-accordians.html">Accordians</a></li>
-											<li><a href="shortcode-dividers.html">Dividers</a></li>
-											<li><a href="shortcode-images-effects.html">Images effects</a></li>
-											<li><a href="shortcode-testimonials.html">Testimonials</a></li>
-											<li><a href="shortcode-magnific-popup.html">Magnific Gallery </a></li>
+											<li><a href="shortcode-accordians.html">Accordéons</a></li>
+											<li><a href="shortcode-dividers.html">Séparateurs</a></li>
+											<li><a href="shortcode-images-effects.html">Effets d'images</a></li>
+											<li><a href="shortcode-testimonials.html">Témoignages</a></li>
+											<li><a href="shortcode-magnific-popup.html">Galerie Magnific</a></li>
 										</ul>
 									</li>
 									<li> <a href="javascript:;">Shortcodes</a>
 										<ul>
-											<li><a href="shortcode-alert-box.html">Alert box</a></li>
-											<li><a href="shortcode-icon-box.html">Icon-box</a></li>
-											<li><a href="shortcode-list-group.html">List group</a></li>
-											<li><a href="shortcode-title-separators.html">title-separators</a></li>
+											<li><a href="shortcode-alert-box.html">Alertes</a></li>
+											<li><a href="shortcode-icon-box.html">Blocs d'icônes</a></li>
+											<li><a href="shortcode-list-group.html">Listes</a></li>
+											<li><a href="shortcode-title-separators.html">Séparateurs de titres</a></li>
 											<li><a href="shortcode-all-widgets.html">Widgets</a></li>
 										</ul>
 									</li>
@@ -395,8 +395,8 @@
 									<!-- LAYERS -->
 									<div class="tp-caption tp-shape tp-shapewrapper " id="slide-100-layer-3" data-x="['center','center','center','center']" data-hoffset="['0','0','0','0']" data-y="['middle','middle','middle','middle']" data-voffset="['0','0','0','0']" data-width="full" data-height="full" data-whitespace="nowrap" data-type="shape" data-basealign="slide" data-responsive_offset="off" data-responsive="off" data-frames='[{"from":"opacity:0;","speed":1000,"to":"o:1;","delay":0,"ease":"Power4.easeOut"},{"delay":"wait","speed":1000,"to":"opacity:0;","ease":"Power4.easeOut"}]' data-textalign="['left','left','left','left']" data-paddingtop="[0,0,0,0]" data-paddingright="[0,0,0,0]" data-paddingbottom="[0,0,0,0]" data-paddingleft="[0,0,0,0]" style="z-index: 2;background-color:rgba(0, 0, 0, 0.3);border-color:rgba(0, 0, 0, 0);border-width:0px;"> </div>
 									<!-- LAYER NR. 7 -->
-									<div class="tp-caption   rs-parallaxlevel-4" id="slide-3241-layer-1" data-x="['center','center','center','center']" data-hoffset="['0','0','0','0']" data-y="['middle','middle','middle','middle']" data-voffset="['-70','-70','-70','-100']" data-fontsize="['60','60','40','20']" data-lineheight="['70','70','50','30']" data-width="['720','640','480','300']" data-height="none" data-whitespace="normal" data-type="text" data-responsive_offset="off" data-responsive="off" data-frames='[{"from":"y:20px;sX:0.9;sY:0.9;opacity:0;","speed":1000,"to":"o:1;","delay":500,"ease":"Power4.easeOut"},{"delay":"wait","speed":300,"to":"opacity:0;","ease":"nothing"}]' data-textalign="['center','center','center','center']" data-paddingtop="[0,0,0,0]" data-paddingright="[0,0,0,0]" data-paddingbottom="[0,0,0,0]" data-paddingleft="[0,0,0,0]" style="z-index: 11; min-width: 720px; max-width: 720px; white-space: normal; font-size: 60px; line-height: 70px; font-weight: 700; color: rgba(255, 255, 255, 1.00);font-family:'rubik',sans-serif;border-width:0px;letter-spacing:10px;">WELCOME<br>
-							 TO HOSPITAL </div>
+									<div class="tp-caption   rs-parallaxlevel-4" id="slide-3241-layer-1" data-x="['center','center','center','center']" data-hoffset="['0','0','0','0']" data-y="['middle','middle','middle','middle']" data-voffset="['-70','-70','-70','-100']" data-fontsize="['60','60','40','20']" data-lineheight="['70','70','50','30']" data-width="['720','640','480','300']" data-height="none" data-whitespace="normal" data-type="text" data-responsive_offset="off" data-responsive="off" data-frames='[{"from":"y:20px;sX:0.9;sY:0.9;opacity:0;","speed":1000,"to":"o:1;","delay":500,"ease":"Power4.easeOut"},{"delay":"wait","speed":300,"to":"opacity:0;","ease":"nothing"}]' data-textalign="['center','center','center','center']" data-paddingtop="[0,0,0,0]" data-paddingright="[0,0,0,0]" data-paddingbottom="[0,0,0,0]" data-paddingleft="[0,0,0,0]" style="z-index: 11; min-width: 720px; max-width: 720px; white-space: normal; font-size: 60px; line-height: 70px; font-weight: 700; color: rgba(255, 255, 255, 1.00);font-family:'rubik',sans-serif;border-width:0px;letter-spacing:10px;">BIENVENUE<br>
+							 À L'HÔPITAL </div>
 
 									<!-- LAYER NR. 8 -->
 									<div class="tp-caption   rs-parallaxlevel-4" id="slide-3241-layer-2" data-x="['center','center','center','center']" data-hoffset="['0','0','0','0']" data-y="['middle','middle','middle','middle']" data-voffset="['44','57','39','0']" data-fontsize="['17','17','17','15']" data-lineheight="['26','26','26','24']" data-width="['720','480','480','300']" data-height="none" data-whitespace="normal" data-type="text" data-responsive_offset="off" data-responsive="off" data-frames='[{"from":"y:10px;sX:0.9;sY:0.9;opacity:0;","speed":1000,"to":"o:1;","delay":700,"ease":"Power4.easeOut"},{"delay":"wait","speed":300,"to":"opacity:0;","ease":"nothing"}]' data-textalign="['center','center','center','center']" data-paddingtop="[0,0,0,0]" data-paddingright="[0,0,0,0]" data-paddingbottom="[0,0,0,0]" data-paddingleft="[0,0,0,0]" style="z-index: 12; min-width: 720px; max-width: 720px; white-space: normal; font-size: 17px; line-height: 26px; font-weight: 400; color: rgba(255, 255, 255, 1.00);font-family:'rubik',sans-serif;border-width:0px;">Post-ironic authentic drinking vinegar chambray quinoa. VHS letterpress sriracha, tacos skateboard migas farm-to-table artisan kombucha.  </div>
@@ -467,7 +467,7 @@
 								<i class="icon flaticon-bar-chart text-white"></i>
 								<span class="counter">7652</span>
 							</div>
-							<span class="counter-text">Completed Projects</span>
+							<span class="counter-text">Projets terminés</span>
 						</div>
 					</div>
 					<div class="col-lg-3 col-md-6 col-sm-6 col-6">
@@ -476,7 +476,7 @@
 								<i class="icon flaticon-social text-white"></i>
 								<span class="counter">4562</span>
 							</div>
-							<span class="counter-text">Happy Clients</span>
+							<span class="counter-text">Patients satisfaits</span>
 						</div>
 					</div>
 					<div class="col-lg-3 col-md-6 col-sm-6 col-6">
@@ -485,7 +485,7 @@
 								<i class="icon flaticon-file text-white"></i>
 								<span class="counter">3569</span>
 							</div>
-							<span class="counter-text">Questions Answered</span>
+							<span class="counter-text">Questions traitées</span>
 						</div>
 					</div>
 					<div class="col-lg-3 col-md-6 col-sm-6 col-6">
@@ -494,7 +494,7 @@
 								<i class="icon flaticon-pencil text-white"></i>
 								<span class="counter">2089</span>
 							</div>
-							<span class="counter-text">Ordered Coffee's</span>
+							<span class="counter-text">Cafés servis</span>
 						</div>
 					</div>
 				</div>
@@ -661,7 +661,7 @@
 								<div class="dez-info p-a20 border-1 bg-white">
 									<h4 class="dez-title m-t15"><a href="#">Fournir une productivité de qualité..</a></h4>
 									<p class="m-b10">Lorem ipsum dolor Fusce varius euismod lacus eget feugiat rorem ipsum dolor consectetur Fusce varius . </p>
-									<a href="#" class="site-button-link black m-b10">Read More</a>
+									<a href="#" class="site-button-link black m-b10">Lire plus</a>
 									<div class="dez-divider bg-gray m10"><i class="icon-dot c-square"></i></div>
 									<div class="dez-post-meta ">
                                         <ul>
@@ -681,7 +681,7 @@
 								<div class="dez-info p-a20 border-1 bg-white">
 									<h4 class="dez-title m-t15"><a href="#">Fournir une productivité de qualité..</a></h4>
 									<p class="m-b10">Lorem ipsum dolor Fusce varius euismod lacus eget feugiat rorem ipsum dolor consectetur Fusce varius . </p>
-									<a href="#" class="site-button-link black m-b10">Read More</a>
+									<a href="#" class="site-button-link black m-b10">Lire plus</a>
 									<div class="dez-divider bg-gray m10"><i class="icon-dot c-square"></i></div>
 									<div class="dez-post-meta ">
                                         <ul>
@@ -701,7 +701,7 @@
 								<div class="dez-info p-a20 border-1 bg-white">
 									<h4 class="dez-title m-t15"><a href="#">Fournir une productivité de qualité..</a></h4>
 									<p class="m-b10">Lorem ipsum dolor Fusce varius euismod lacus eget feugiat rorem ipsum dolor consectetur Fusce varius . </p>
-									<a href="#" class="site-button-link black m-b10">Read More</a>
+									<a href="#" class="site-button-link black m-b10">Lire plus</a>
 									<div class="dez-divider bg-gray m10"><i class="icon-dot c-square"></i></div>
 									<div class="dez-post-meta ">
                                         <ul>
@@ -855,12 +855,12 @@
                             <h4 class="m-b15 text-uppercase">Nos services</h4>
                             <div class="dez-separator bg-primary"></div>
                             <ul>
-                                <li><a href="services-2.html">Emegency Care</a></li>
-                                <li><a href="services-2.html">Operation Theater</a></li>
-                                <li><a href="services-2.html">Medical Checkup</a></li>
-                                <li><a href="services-2.html">Ddiagnostic Center</a></li>
-                                <li><a href="services-2.html">Outdoor Checkup</a></li>
-                                <li><a href="services-2.html">Pharmacy Servicea</a></li>
+                                <li><a href="services-2.html">Soins d'urgence</a></li>
+                                <li><a href="services-2.html">Bloc opératoire</a></li>
+                                <li><a href="services-2.html">Bilan médical</a></li>
+                                <li><a href="services-2.html">Centre de diagnostic</a></li>
+                                <li><a href="services-2.html">Consultations externes</a></li>
+                                <li><a href="services-2.html">Service de pharmacie</a></li>
                             </ul>
                         </div>
                     </div>
@@ -869,16 +869,16 @@
                             <h4 class="m-b15 text-uppercase">Nous contacter</h4>
                             <div class="dez-separator bg-primary"></div>
                             <ul>
-                                <li><i class="fa fa-map-marker"></i><strong>address</strong> demo address #8901 Marmora Road Chi Minh City, Vietnam </li>
-                                <li><i class="fa fa-phone"></i><strong>phone</strong>0800-123456 (24/7 Support Line)</li>
-                                <li><i class="fa fa-fax"></i><strong>FAX</strong>(123) 123-4567<br>
+                                <li><i class="fa fa-map-marker"></i><strong>Adresse</strong> adresse démo #8901 Marmora Road, Ho Chi Minh Ville, Vietnam </li>
+                                <li><i class="fa fa-phone"></i><strong>Téléphone</strong>0800-123456 (Support 24h/24)</li>
+                                <li><i class="fa fa-fax"></i><strong>Fax</strong>(123) 123-4567<br>
                                     000 123 2294 089</li>
                             </ul>
                         </div>
                     </div>
                     <div class="col-lg-3 col-md-6 col-sm-6 footer-col-4">
                         <div class="widget widget_gallery">
-                            <h4 class="m-b15 text-uppercase">Recent Post</h4>
+                            <h4 class="m-b15 text-uppercase">Articles récents</h4>
                             <div class="dez-separator bg-primary"></div>
                             <ul>
                                 <li class="img-effect2"> <a href="javascript:void(0);"><img src="images/gallery/small/pic1.jpg" alt=""></a> </li>
@@ -900,7 +900,7 @@
                             <div class="icon-lg text-primary radius m-t10"> <a href="#" class="icon-cell"><i class="fa fa-envelope-o"></i></a> </div>
                             <div class="icon-content">
                                 <h2 class="dez-tilte m-b0">Newsletter</h2>
-                                <p>Lorem Ipsum is simply dummy text of the printing and.</p>
+                                <p>Recevez nos dernières actualités par email.</p>
                             </div>
                         </div>
                     </div>
@@ -909,9 +909,9 @@
 							<form class="dzSubscribe" action="script/mailchamp.php" method="post">
 								<div class="dzSubscribeMsg"></div>
 								<div class="input-group">
-									<input name="dzEmail" required="required" class="form-control" placeholder="Your Email Id" type="email">
+									<input name="dzEmail" required="required" class="form-control" placeholder="Votre adresse email" type="email">
 									<span class="input-group-btn">
-										<button name="submit" value="Submit" type="submit" class="site-button m-l10">Submit</button>
+										<button name="submit" value="Submit" type="submit" class="site-button m-l10">Envoyer</button>
 									</span> 
 								</div>
 							</form>
@@ -928,13 +928,13 @@
 						<span>Copyright © <span class="current-year">2024</span> DexignZone</span>
 					</div>
                     <div class="col-lg-4 col-md-4 text-center">
-						<span> Design With <i class="fa fa-heart heart"></i> By DexignZone </span> 
+						<span> Conçu avec <i class="fa fa-heart heart"></i> par DexignZone </span> 
 					</div>
                     <div class="col-lg-4 col-md-4 text-right">
 						<ul class="footer-info-list text-right">
-							<li><a href="about-2.html"> About</a></li>
-							<li><a href="help.html"> Help Desk</a></li>
-							<li><a href="privacy-policy.html"> Privacy Policy</a></li>
+							<li><a href="about-2.html"> À propos</a></li>
+							<li><a href="help.html"> Support</a></li>
+							<li><a href="privacy-policy.html"> Politique de confidentialité</a></li>
 						</ul>
 					</div>
                 </div>

@@ -35,7 +35,7 @@ if (is_dir($dossier_auft)) {
 $image_default_ophtalmologie = !empty($images_auft) ? $images_auft[0] : 'image/medecin/i44.jfif';
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -226,7 +226,7 @@ $image_default_ophtalmologie = !empty($images_auft) ? $images_auft[0] : 'image/m
 										data-paddingbottom="[10,10,10,10]"
 										data-paddingleft="[0,0,0,0]"
 
-										style="z-index: 6; white-space: normal;text-transform:left; line-height:80px; color:#fff; font-family:'rubik', sans-serif">This is Photoshop's version  of Lorem Ipsum. Proin gravida nibh vel velit auctor aliquet. Aenean sollicitudin, lorem quis bibendum auctor, nisi elit consequat ipsum, nec sagittis sem nibh id elit. Duis sed odio sit amet nibh vulputate...</div>
+										style="z-index: 6; white-space: normal;text-transform:left; line-height:80px; color:#fff; font-family:'rubik', sans-serif">Texte d'exemple pour présenter nos services d'ophtalmologie. Nous offrons des soins complets pour préserver et améliorer votre vision.</div>
                                     <!-- LAYER NR. 4 -->
                                     <div class="tp-caption radius-xl" 
 										id="slide-100-layer-5" 
@@ -334,7 +334,7 @@ $image_default_ophtalmologie = !empty($images_auft) ? $images_auft[0] : 'image/m
 										data-paddingbottom="[10,10,10,10]"
 										data-paddingleft="[0,0,0,0]"
 
-										style="z-index: 6; white-space: normal;text-transform:left; line-height:80px; color:#fff; font-family:'rubik', sans-serif">This is Photoshop's version  of Lorem Ipsum. Proin gravida nibh vel velit auctor aliquet. Aenean sollicitudin, lorem quis bibendum auctor, nisi elit consequat ipsum, nec sagittis sem nibh id elit. Duis sed odio sit amet nibh vulputate...</div>
+										style="z-index: 6; white-space: normal;text-transform:left; line-height:80px; color:#fff; font-family:'rubik', sans-serif">Texte d'exemple pour présenter nos services d'ophtalmologie. Nous offrons des soins complets pour préserver et améliorer votre vision.</div>
                                     <!-- LAYER NR. 4 -->
                                     <div class="tp-caption radius-xl" 
 										id="slide-200-layer-5" 
@@ -504,7 +504,7 @@ $image_default_ophtalmologie = !empty($images_auft) ? $images_auft[0] : 'image/m
 								<i class="icon flaticon-bar-chart text-white"></i>
 								<span class="counter">7652</span>
 							</div>
-							<span class="counter-text">Completed Projects</span>
+							<span class="counter-text">Projets terminés</span>
 						</div>
 					</div>
 					<div class="col-lg-3 col-md-6 col-sm-6 col-6">
@@ -513,7 +513,7 @@ $image_default_ophtalmologie = !empty($images_auft) ? $images_auft[0] : 'image/m
 								<i class="icon flaticon-social text-white"></i>
 								<span class="counter">4562</span>
 							</div>
-							<span class="counter-text">Happy Clients</span>
+							<span class="counter-text">Patients satisfaits</span>
 						</div>
 					</div>
 					<div class="col-lg-3 col-md-6 col-sm-6 col-6">
@@ -522,7 +522,7 @@ $image_default_ophtalmologie = !empty($images_auft) ? $images_auft[0] : 'image/m
 								<i class="icon flaticon-file text-white"></i>
 								<span class="counter">3569</span>
 							</div>
-							<span class="counter-text">Questions Answered</span>
+							<span class="counter-text">Questions traitées</span>
 						</div>
 					</div>
 					<div class="col-lg-3 col-md-6 col-sm-6 col-6">
@@ -531,7 +531,7 @@ $image_default_ophtalmologie = !empty($images_auft) ? $images_auft[0] : 'image/m
 								<i class="icon flaticon-pencil text-white"></i>
 								<span class="counter">2089</span>
 							</div>
-							<span class="counter-text">Ordered Coffee's</span>
+							<span class="counter-text">Cafés servis</span>
 						</div>
 					</div>
 				</div>

@@ -1,31 +1,39 @@
 # Flux Complet de Prise de Rendez-vous - MediCo.
 
+## Règle métier
+
+**La création des rendez-vous ne dépend que de l'agent d'accueil** ; l'administrateur est là en secours (ex. absence de médecin). Le médecin ne crée pas les RDV, il les valide/confirme. Le patient (ou un visiteur) dépose une **demande** sur `/rendez-vous.php` ; l'accueil la traite et crée le RDV, puis le médecin confirme.
+
 ## Processus Complet
 
-### 1. LE PATIENT PREND UN RENDEZ-VOUS
+### 1. DEMANDE DE RENDEZ-VOUS (patient ou visiteur)
 
 #### A. Patient Connecté (Recommandé)
 1. Le patient se connecte à son compte
 2. Va sur la page `/rendez-vous.php`
 3. **Ses informations sont automatiquement détectées** (nom, matricule)
-4. Il remplit uniquement :
-   - Service (ex: Consultation générale, Maternité, etc.)
-   - Médecin (filtré automatiquement par service)
-   - Date et heure (format: jj/mm/aaaa hh:mm)
-   - Motif (optionnel)
+4. Il remplit : service, date/heure, motif
 5. Clique sur "Réserver le rendez-vous"
-6. **Le rendez-vous est créé avec le statut "planifié"**
+6. **Une demande est enregistrée** ; l'accueil créera le RDV, puis un médecin le confirmera.
 
-#### B. Patient Non Connecté
-1. Le patient va sur `/rendez-vous.php`
-2. Il doit d'abord rechercher son compte par matricule
-3. Une fois trouvé, il remplit les mêmes champs (service, médecin, date, motif)
-4. Clique sur "Réserver le rendez-vous"
-5. **Le rendez-vous est créé avec le statut "planifié"**
+#### B. Patient Non Connecté ou Visiteur
+1. Il va sur `/rendez-vous.php`
+2. Il renseigne nom, matricule (ou cherche son compte), service, date/heure, motif
+3. Clique sur "Réserver le rendez-vous"
+4. **Une demande est enregistrée** ; l'accueil créera le RDV et un médecin le confirmera.
 
 ---
 
-### 2. LE MÉDECIN VOIT LA DEMANDE
+### 2. L'ACCUEIL CRÉE LE RENDEZ-VOUS
+
+1. L'agent d'accueil se connecte et va sur `/accueil/demandes-rdv.php`
+2. Il voit les **demandes en attente** (patient, service, date/heure, motif)
+3. Pour une demande liée à un patient connu : il confirme le lien patient ↔ demande, puis **crée le RDV**
+4. Le RDV passe en statut "planifié" et est visible par le médecin du service. (L'admin peut aussi créer des RDV depuis `/rendez-vous.php` en secours.)
+
+---
+
+### 3. LE MÉDECIN VOIT LA DEMANDE
 
 1. Le médecin se connecte à son compte
 2. Va sur `/medecin/mes-rendez-vous.php`
@@ -40,7 +48,7 @@
 
 ---
 
-### 3. LE MÉDECIN ACCEPTE LE RENDEZ-VOUS
+### 4. LE MÉDECIN ACCEPTE LE RENDEZ-VOUS
 
 1. Le médecin clique sur "Confirmer ce rendez-vous"
 2. Une confirmation apparaît : "Voulez-vous confirmer ce rendez-vous ? Le patient recevra une notification."
@@ -50,7 +58,7 @@
 
 ---
 
-### 4. LE PATIENT REÇOIT LA NOTIFICATION
+### 5. LE PATIENT REÇOIT LA NOTIFICATION
 
 1. Le patient se connecte à son compte
 2. Va sur `/profil.php`
@@ -79,10 +87,10 @@
 
 ## Vérifications de Sécurité
 
-### Pour le Patient
-- ✅ Un patient ne peut créer des rendez-vous que pour lui-même (sauf admin/accueil)
+### Pour le Patient / Visiteur
+- ✅ Le patient ou le visiteur dépose une **demande** sur `/rendez-vous.php` ; seul l'accueil (ou l'admin) crée le RDV
 - ✅ Les champs nom/matricule sont pré-remplis si le patient est connecté
-- ✅ Validation que le patient existe dans la base de données
+- ✅ Validation que le patient existe en base pour lier la demande au dossier
 
 ### Pour le Médecin
 - ✅ Un médecin ne voit que les rendez-vous de son service
@@ -107,8 +115,9 @@
 
 ## Fichiers Concernés
 
-- `/rendez-vous.php` - Page de prise de rendez-vous
-- `/medecin/mes-rendez-vous.php` - Liste des rendez-vous pour le médecin
+- `/rendez-vous.php` - Demande de RDV (patient/visiteur) ou **création** de RDV (accueil/admin uniquement)
+- `/accueil/demandes-rdv.php` - Traitement des demandes par l'accueil (création du RDV à partir de la demande)
+- `/medecin/mes-rendez-vous.php` - Liste des rendez-vous pour le médecin (médecin redirigé depuis rendez-vous.php s'il tente de créer un RDV)
 - `/medecin/approuver-rdv.php` - Script d'approbation (AJAX)
 - `/profil.php` - Profil patient avec notifications
 - `/config/database_functions.php` - Fonctions de création et gestion

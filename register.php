@@ -19,7 +19,7 @@ requireLogout('index.php');
 			box-sizing: border-box;
 		}
 		body {
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: #ffffff;
 			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 			min-height: 100vh;
 			display: flex;
@@ -28,155 +28,171 @@ requireLogout('index.php');
 			padding: 20px;
 		}
 		.selection-container {
-			max-width: 800px;
+			max-width: 700px;
 			width: 100%;
 			background: #fff;
-			border-radius: 20px;
-			box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+			border-radius: 16px;
+			border: 1px solid #e5e7eb;
+			box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 			overflow: hidden;
 		}
 		.selection-header {
-			background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
-			color: white;
-			padding: 40px;
+			background: #f8fafc;
+			color: #1e293b;
+			padding: 32px;
 			text-align: center;
+			border-bottom: 1px solid #e5e7eb;
 		}
 		.selection-header h1 {
-			font-size: 32px;
-			margin-bottom: 10px;
+			font-size: 28px;
+			margin-bottom: 8px;
+			color: #0f172a;
 		}
+		.selection-header h1 i { color: #64748b; }
 		.selection-header p {
-			font-size: 16px;
-			opacity: 0.9;
+			font-size: 15px;
+			color: #64748b;
 		}
 		.selection-body {
-			padding: 50px 40px;
+			padding: 36px 32px;
 		}
 		.account-types {
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-			gap: 30px;
-			margin-bottom: 30px;
+			grid-template-columns: 1fr 1fr;
+			gap: 20px;
+			margin-bottom: 28px;
 		}
-		.account-card {
-			border: 2px solid #e0e0e0;
-			border-radius: 15px;
-			padding: 30px;
-			text-align: center;
-			cursor: pointer;
-			transition: all 0.3s;
-			background: #fff;
+		@media (max-width: 600px) {
+			.account-types { grid-template-columns: 1fr; }
 		}
-		.account-card:hover {
-			border-color: #4A90E2;
-			transform: translateY(-5px);
-			box-shadow: 0 5px 20px rgba(74, 144, 226, 0.2);
-		}
-		.account-card.selected {
-			border-color: #4A90E2;
-			background: #f0f7ff;
-		}
-		.account-icon {
-			width: 80px;
-			height: 80px;
-			margin: 0 auto 20px;
-			background: #4A90E2;
-			border-radius: 50%;
+		/* Boutons avec le nom écrit dessus */
+		.account-btn {
 			display: flex;
+			flex-direction: row;
 			align-items: center;
 			justify-content: center;
-			color: white;
-			font-size: 36px;
-		}
-		.account-card.patient .account-icon {
-			background: #28a745;
-		}
-		.account-card.medecin .account-icon {
-			background: #ffc107;
-		}
-		.account-title {
-			font-size: 24px;
+			gap: 12px;
+			width: 100%;
+			min-height: 56px;
+			padding: 16px 28px;
+			border: none;
+			border-radius: 10px;
+			font-family: inherit;
+			font-size: 18px;
 			font-weight: 700;
-			color: #333;
-			margin-bottom: 15px;
+			color: #fff;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			text-align: center;
+			-webkit-appearance: none;
+			appearance: none;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 		}
-		.account-description {
-			color: #666;
-			font-size: 14px;
-			line-height: 1.6;
-			margin-bottom: 20px;
+		.account-btn:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 4px 14px rgba(0,0,0,0.2);
 		}
-		.account-features {
-			list-style: none;
-			text-align: left;
-			margin-bottom: 20px;
+		.account-btn:focus {
+			outline: none;
+			box-shadow: 0 0 0 3px rgba(255,255,255,0.5), 0 2px 8px rgba(0,0,0,0.2);
 		}
-		.account-features li {
-			padding: 8px 0;
-			color: #555;
-			font-size: 14px;
+		.account-btn:active {
+			transform: translateY(0);
 		}
-		.account-features li i {
-			color: #4A90E2;
-			margin-right: 10px;
-			width: 20px;
+		.account-btn.patient {
+			background: #16a34a;
+			color: #fff;
 		}
-		.account-card.patient .account-features li i {
-			color: #28a745;
+		.account-btn.patient:hover { background: #15803d; }
+		.account-btn.patient.selected {
+			background: #15803d;
+			box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.4);
 		}
-		.account-card.medecin .account-features li i {
-			color: #ffc107;
+		.account-btn.medecin {
+			background: #d97706;
+			color: #fff;
 		}
+		.account-btn.medecin:hover { background: #b45309; }
+		.account-btn.medecin.selected {
+			background: #b45309;
+			box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.4);
+		}
+		.account-btn .account-icon {
+			font-size: 22px;
+			color: #fff;
+		}
+		.account-btn .account-title { font-size: 18px; font-weight: 700; }
 		.warning-box {
-			background: #fff3cd;
-			border-left: 4px solid #ffc107;
-			padding: 15px;
+			background: #fffbeb;
+			border: 1px solid #fcd34d;
+			padding: 14px 16px;
 			border-radius: 8px;
-			margin-bottom: 30px;
+			margin-bottom: 24px;
 			display: none;
+			font-size: 14px;
+			color: #92400e;
 		}
-		.warning-box.show {
-			display: block;
-		}
-		.warning-box i {
-			color: #ffc107;
-			margin-right: 10px;
+		.warning-box.show { display: block; }
+		.warning-box i { margin-right: 8px; color: #d97706; }
+		.actions {
+			display: flex;
+			flex-direction: column;
+			gap: 14px;
 		}
 		.btn-continue {
 			width: 100%;
-			background: #4A90E2;
+			background: #2563eb;
 			color: white;
 			border: none;
-			padding: 18px;
+			padding: 16px 24px;
 			border-radius: 10px;
-			font-size: 18px;
+			font-size: 17px;
 			font-weight: 600;
 			cursor: pointer;
-			transition: background 0.3s;
+			transition: all 0.2s;
 			display: none;
+			font-family: inherit;
+			box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
 		}
-		.btn-continue.show {
-			display: block;
-		}
+		.btn-continue.show { display: flex; align-items: center; justify-content: center; gap: 10px; }
 		.btn-continue:hover {
-			background: #357ABD;
+			background: #1d4ed8;
+			box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+			transform: translateY(-1px);
 		}
-		.btn-continue:disabled {
-			background: #ccc;
-			cursor: not-allowed;
+		.btn-continue:active { transform: translateY(0); }
+		.btn-continue:focus {
+			outline: none;
+			box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
+		}
+		.btn-login {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			width: 100%;
+			padding: 14px 24px;
+			background: #fff;
+			color: #2563eb;
+			border: 2px solid #2563eb;
+			border-radius: 10px;
+			font-size: 15px;
+			font-weight: 600;
+			text-decoration: none;
+			font-family: inherit;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+		.btn-login:hover {
+			background: #eff6ff;
+			border-color: #1d4ed8;
+			color: #1d4ed8;
 		}
 		.login-link {
 			text-align: center;
-			margin-top: 25px;
-			color: #666;
-		}
-		.login-link a {
-			color: #4A90E2;
-			text-decoration: none;
-			font-weight: 600;
-		}
-		.login-link a:hover {
-			text-decoration: underline;
+			margin-top: 20px;
+			color: #6b7280;
+			font-size: 14px;
 		}
 	</style>
 </head>
@@ -189,55 +205,35 @@ requireLogout('index.php');
 	
 	<div class="selection-body">
 		<div class="account-types">
-			<!-- Carte Patient -->
-			<div class="account-card patient" data-type="patient" onclick="selectAccountType('patient')">
-				<div class="account-icon">
-					<i class="fa fa-user"></i>
-				</div>
-				<h2 class="account-title">Patient</h2>
-				<p class="account-description">
-					Créez votre compte patient pour accéder rapidement à vos services médicaux
-				</p>
-				<ul class="account-features">
-					<li><i class="fa fa-check"></i> Accès immédiat à votre compte</li>
-					<li><i class="fa fa-check"></i> Prendre des rendez-vous en ligne</li>
-					<li><i class="fa fa-check"></i> Consulter vos dossiers médicaux</li>
-					<li><i class="fa fa-check"></i> Gérer vos informations personnelles</li>
-				</ul>
-			</div>
-			
-			<!-- Carte Médecin -->
-			<div class="account-card medecin" data-type="medecin" onclick="selectAccountType('medecin')">
-				<div class="account-icon">
-					<i class="fa fa-user-md"></i>
-				</div>
-				<h2 class="account-title">Médecin</h2>
-				<p class="account-description">
-					Inscrivez-vous en tant que professionnel de santé
-				</p>
-				<ul class="account-features">
-					<li><i class="fa fa-check"></i> Gérer vos rendez-vous</li>
-					<li><i class="fa fa-check"></i> Consulter vos patients</li>
-					<li><i class="fa fa-check"></i> Créer des ordonnances</li>
-					<li><i class="fa fa-info-circle"></i> <strong>Validation requise par l'administrateur</strong></li>
-				</ul>
-			</div>
+			<!-- Bouton Patient : le nom est écrit sur le bouton -->
+			<button type="button" class="account-btn patient" data-type="patient" onclick="selectAccountType('patient')" aria-pressed="false" aria-label="Choisir Patient">
+				<i class="fa fa-user account-icon"></i>
+				<span class="account-title">Patient</span>
+			</button>
+			<!-- Bouton Médecin : le nom est écrit sur le bouton -->
+			<button type="button" class="account-btn medecin" data-type="medecin" onclick="selectAccountType('medecin')" aria-pressed="false" aria-label="Choisir Médecin">
+				<i class="fa fa-user-md account-icon"></i>
+				<span class="account-title">Médecin</span>
+			</button>
 		</div>
 		
 		<div class="warning-box" id="warning-box">
 			<i class="fa fa-exclamation-triangle"></i>
-			<strong>Important :</strong> Votre demande d'inscription en tant que médecin sera soumise à validation par l'administrateur. Vous recevrez un email de confirmation une fois votre compte approuvé.
+			<strong>Important :</strong> Votre demande sera soumise à validation par l'administrateur. Vous recevrez un email une fois votre compte approuvé.
 		</div>
 		
-		<form id="account-form" method="get" action="">
-			<input type="hidden" name="type" id="account-type" value="">
-			<button type="submit" class="btn-continue" id="btn-continue">
-				Continuer l'inscription <i class="fa fa-arrow-right"></i>
-			</button>
-		</form>
+		<div class="actions">
+			<form id="account-form" method="get" action="">
+				<input type="hidden" name="type" id="account-type" value="">
+				<button type="submit" class="btn-continue" id="btn-continue">
+					Continuer l'inscription <i class="fa fa-arrow-right"></i>
+				</button>
+			</form>
+			<a href="login.php" class="btn-login"><i class="fa fa-sign-in"></i> Se connecter</a>
+		</div>
 		
 		<div class="login-link">
-			Vous avez déjà un compte? <a href="login.php">Se connecter</a>
+			Déjà inscrit ? Utilisez le bouton « Se connecter ».
 		</div>
 	</div>
 </div>
@@ -245,13 +241,15 @@ requireLogout('index.php');
 <script>
 function selectAccountType(type) {
 	// Retirer la sélection précédente
-	document.querySelectorAll('.account-card').forEach(card => {
-		card.classList.remove('selected');
+	document.querySelectorAll('.account-btn').forEach(btn => {
+		btn.classList.remove('selected');
+		btn.setAttribute('aria-pressed', 'false');
 	});
 	
-	// Ajouter la sélection à la carte cliquée
-	const selectedCard = document.querySelector(`.account-card[data-type="${type}"]`);
-	selectedCard.classList.add('selected');
+	// Sélectionner le bouton cliqué
+	const selectedBtn = document.querySelector(`.account-btn[data-type="${type}"]`);
+	selectedBtn.classList.add('selected');
+	selectedBtn.setAttribute('aria-pressed', 'true');
 	
 	// Mettre à jour le formulaire
 	document.getElementById('account-type').value = type;

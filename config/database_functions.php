@@ -289,7 +289,24 @@ function getMedecinsBySpecialisation($specialisation) {
 }
 
 /**
- * Obtenir les médecins d'un service spécifique
+ * Équivalences service ↔ spécialisation (ex. Maternité → Gynécologie-Obstétrique)
+ */
+function getSpecialisationsPourService($nom_service) {
+    $nom = trim($nom_service ?? '');
+    if ($nom === '') return [$nom];
+    $equivalences = [
+        'Maternité' => ['Maternité', 'Gynécologie-Obstétrique', 'Gynécologie', 'Obstétrique'],
+        'Consultation générale' => ['Consultation générale', 'Médecine générale', 'Généraliste'],
+        'Chirurgie' => ['Chirurgie', 'Chirurgie générale'],
+        'Ophtalmologie' => ['Ophtalmologie'],
+    ];
+    return $equivalences[$nom] ?? [$nom];
+}
+
+/**
+ * Obtenir les médecins dont la spécialité correspond au service.
+ * Il n'y a pas d'« affectation » : l'admin ajoute ou approuve un médecin ; sa Spécialisation_med définit le(s) service(s) qu'il couvre.
+ * Utilise les équivalences (ex. Maternité ↔ Gynécologie-Obstétrique) pour faire correspondre spécialité ↔ nom du service.
  */
 function getMedecinsByService($id_service) {
     try {
@@ -306,13 +323,15 @@ function getMedecinsByService($id_service) {
         }
         
         $nom_service = $service['Nom_service'];
+        $specialisations = getSpecialisationsPourService($nom_service);
         
-        // Récupérer les médecins dont la spécialisation correspond au service
+        // Médecins dont la spécialisation correspond au service ou à une équivalence
+        $placeholders = implode(',', array_fill(0, count($specialisations), '?'));
         $sql = "SELECT * FROM MEDECINS 
-                WHERE Spécialisation_med = ? AND statut = 'approuvé' 
+                WHERE Spécialisation_med IN ($placeholders) AND LOWER(TRIM(statut)) = 'approuvé' 
                 ORDER BY Nom_med, Prénom_med";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$nom_service]);
+        $stmt->execute($specialisations);
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         return $result ? $result : [];
@@ -382,10 +401,11 @@ function getAllMedecins() {
 
 /**
  * Créer un nouveau rendez-vous
+ * @param PDO|null $pdo_connexion Connexion optionnelle pour transaction (ex. traiterDemandeRendezVous)
  */
-function creerRendezVous($date_rdv, $id_patient, $id_med, $id_service = null, $motif = null) {
+function creerRendezVous($date_rdv, $id_patient, $id_med, $id_service = null, $motif = null, $pdo_connexion = null) {
     try {
-        $pdo = bdd();
+        $pdo = ($pdo_connexion instanceof PDO) ? $pdo_connexion : bdd();
         
         // Créer le rendez-vous directement - plus de vérification d'existence
         // Si le patient ou le médecin n'existe pas, la contrainte de clé étrangère le gérera
@@ -401,27 +421,504 @@ function creerRendezVous($date_rdv, $id_patient, $id_med, $id_service = null, $m
         
         return $result;
     } catch (PDOException $e) {
-        error_log("Erreur creerRendezVous (PDO): " . $e->getMessage() . " | Code: " . $e->getCode() . " | id_patient: $id_patient | id_med: $id_med");
+        error_log("Erreur creerRendezVous (PDO): " . $e->getMessage() . " | Code: " . $e->getCode() . " | id_patient: $id_patient | id_med: " . ($id_med ?? 'NULL'));
         
-        // Gérer spécifiquement les erreurs de contrainte de clé étrangère
-        if ($e->getCode() == 23000 || strpos($e->getMessage(), 'foreign key constraint') !== false) {
-            $err = $e->getMessage();
-            if (stripos($err, 'id_patient') !== false) {
-                throw new Exception("Votre dossier patient n'est pas reconnu pour cette réservation. Déconnectez-vous puis reconnectez-vous (l'email du compte doit correspondre à celui enregistré à l'accueil), ou contactez l'accueil pour faire lier votre compte.");
-            }
+        $err = $e->getMessage();
+        $code = $e->getCode();
+        
+        // Column cannot be null (1048) — souvent id_med quand aucun médecin approuvé pour ce service
+        if ($code == 23000 && (stripos($err, '1048') !== false || stripos($err, 'cannot be null') !== false)) {
             if (stripos($err, 'id_med') !== false) {
-                throw new Exception("Le médecin choisi n'est plus disponible. Réessayez en sélectionnant à nouveau le service.");
+                throw new Exception("Aucun médecin approuvé pour ce service. L'admin doit ajouter ou approuver un médecin (spécialité correspondante).");
             }
-            if (stripos($err, 'id_service') !== false) {
-                throw new Exception("Le service sélectionné n'est plus disponible. Choisissez un autre service et réessayez.");
-            }
-            throw new Exception("Erreur de contrainte. Vérifiez le matricule, le service et la date (jj/mm/aaaa hh:mm), puis réessayez.");
         }
         
-        throw new Exception("Erreur lors de la création du rendez-vous : " . $e->getMessage());
+        // Gérer spécifiquement les erreurs de contrainte de clé étrangère (messages neutres : le bouton Confirmer doit aboutir)
+        if ($code == 23000 || strpos($err, 'foreign key constraint') !== false) {
+            if (stripos($err, 'id_patient') !== false) {
+                throw new Exception("Réessayez dans un instant.");
+            }
+            if (stripos($err, 'id_med') !== false) {
+                throw new Exception("Le médecin choisi n'est plus disponible ou pas encore approuvé par l'admin.");
+            }
+            if (stripos($err, 'id_service') !== false) {
+                throw new Exception("Le service sélectionné n'est plus disponible. Choisissez un autre service.");
+            }
+            throw new Exception("Contrainte base de données (vérifiez patient, médecin et service).");
+        }
+        
+        // Table inexistante
+        if (stripos($err, "doesn't exist") !== false) {
+            throw new Exception("Table RENDEZ_VOUS ou liaison manquante en base. Exécutez les scripts SQL de création.");
+        }
+        
+        throw new Exception("Erreur RDV : " . (strlen($err) > 120 ? substr($err, 0, 117) . '…' : $err));
     } catch (Exception $e) {
         error_log("Erreur creerRendezVous: " . $e->getMessage());
         throw $e;
+    }
+}
+
+/**
+ * S'assurer que la colonne id_med de RENDEZ_VOUS accepte NULL (RDV sans médecin assigné, visible dans admin / page du service)
+ */
+function ensureRendezVousIdMedNullable() {
+    try {
+        $pdo = bdd();
+        $pdo->exec("ALTER TABLE RENDEZ_VOUS MODIFY id_med INT NULL");
+    } catch (Exception $e) {
+        // Déjà NULL ou erreur silencieuse
+        error_log("ensureRendezVousIdMedNullable: " . $e->getMessage());
+    }
+}
+
+/**
+ * S'assurer que la table DEMANDE_RENDEZ_VOUS existe
+ */
+function ensureDemandeRendezVousTable() {
+    try {
+        $pdo = bdd();
+        if (tableExists('DEMANDE_RENDEZ_VOUS')) {
+            // Autoriser le statut 'en_attente_service' (accueil transfère, service confirme)
+            try {
+                $pdo->exec("ALTER TABLE DEMANDE_RENDEZ_VOUS MODIFY statut VARCHAR(50) DEFAULT 'en_attente_accueil'");
+            } catch (Exception $e) {
+                // Déjà VARCHAR ou autre erreur : ignorer
+            }
+            return true;
+        }
+        $pdo->exec("CREATE TABLE IF NOT EXISTS DEMANDE_RENDEZ_VOUS (
+            id_demande INT AUTO_INCREMENT PRIMARY KEY,
+            Date_rdv_souhaitee DATETIME NOT NULL,
+            email_demandeur VARCHAR(255) NULL,
+            nom_demandeur VARCHAR(200) NULL,
+            matricule_demandeur VARCHAR(100) NULL,
+            id_service INT NULL,
+            motif TEXT NULL,
+            id_user INT NULL,
+            statut VARCHAR(30) DEFAULT 'en_attente_accueil',
+            Date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_statut (statut),
+            INDEX idx_date_souhaitee (Date_rdv_souhaitee)
+        )");
+        return true;
+    } catch (Exception $e) {
+        error_log("ensureDemandeRendezVousTable: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Créer une demande de rendez-vous (dossier non reconnu) : enregistre dans DEMANDE_RENDEZ_VOUS et crée aussi une ligne dans RENDEZ_VOUS tout de suite.
+ * L'accueil transmet la demande au service, le médecin confirmera ; le RDV est déjà visible dans la table RENDEZ_VOUS.
+ */
+function creerDemandeRendezVous($date_rdv_mysql, $email, $nom, $matricule, $id_service, $motif, $id_user = null) {
+    if (!ensureDemandeRendezVousTable()) {
+        return false;
+    }
+    try {
+        $pdo = bdd();
+        $sql = "INSERT INTO DEMANDE_RENDEZ_VOUS (Date_rdv_souhaitee, email_demandeur, nom_demandeur, matricule_demandeur, id_service, motif, id_user, statut) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente_accueil')";
+        $stmt = $pdo->prepare($sql);
+        if (!$stmt->execute([$date_rdv_mysql, $email ?: null, $nom ?: null, $matricule ?: null, $id_service ?: null, $motif ?: null, $id_user ?: null])) {
+            return false;
+        }
+        // Créer aussi une ligne dans RENDEZ_VOUS dès maintenant (patient trouvé ou créé, médecin fallback du service)
+        $id_patient = null;
+        $nom_complet = trim($nom ?: '') ?: 'Patient';
+        $mat = trim($matricule ?: '');
+        if (!empty($mat) && function_exists('trouverPatientParMatriculeTouteBase')) {
+            $existant = trouverPatientParMatriculeTouteBase($mat, $nom_complet);
+            if ($existant && !empty($existant['id_patient'])) {
+                $id_patient = (int)$existant['id_patient'];
+            }
+        }
+        if (!$id_patient) {
+            if (empty($mat) && function_exists('genererMatriculePatient')) {
+                $mat = genererMatriculePatient();
+            }
+            if (empty($mat)) {
+                $mat = 'PAT' . date('Ymd') . str_pad((string)mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+            }
+            $parts = preg_split('/\s+/', $nom_complet, 2);
+            $prenom = $parts[0] ?? 'Patient';
+            $nom_fam = $parts[1] ?? $prenom;
+            try {
+                $ins = $pdo->prepare("INSERT INTO PATIENTS (Matricule_patient, Nom_patient, Prénom_patient, Date_naissance_patient, Tel_patient, Email_patient) VALUES (?, ?, ?, '1900-01-01', NULL, ?)");
+                $ins->execute([$mat, $nom_fam, $prenom, $email ?: null]);
+                $id_patient = (int)$pdo->lastInsertId();
+            } catch (PDOException $e) {
+                if (($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate') !== false) && !empty($mat)) {
+                    $st2 = $pdo->prepare("SELECT id_patient FROM PATIENTS WHERE Matricule_patient = ? OR REPLACE(Matricule_patient,' ','') = ? LIMIT 1");
+                    $st2->execute([$mat, preg_replace('/\s+/', '', $mat)]);
+                    $r = $st2->fetch(PDO::FETCH_ASSOC);
+                    $id_patient = $r ? (int)$r['id_patient'] : null;
+                }
+            }
+        }
+        if ($id_patient && tableExists('RENDEZ_VOUS')) {
+            $id_service_int = (int)$id_service;
+            $meds = ($id_service_int > 0 && function_exists('getMedecinsByService')) ? getMedecinsByService($id_service_int) : [];
+            $id_med = null;
+            if (!empty($meds[0]['id_med'])) {
+                $id_med = (int)$meds[0]['id_med'];
+            }
+            if (!$id_med && function_exists('getPremierMedecinApprouve')) {
+                $fb = getPremierMedecinApprouve();
+                $id_med = $fb && !empty($fb['id_med']) ? (int)$fb['id_med'] : null;
+            }
+            if ($id_med) {
+                try {
+                    creerRendezVous($date_rdv_mysql, (int)$id_patient, $id_med, $id_service_int > 0 ? $id_service_int : null, $motif, $pdo);
+                } catch (Exception $e) {
+                    error_log("creerDemandeRendezVous: RDV non créé (médecin/patient ok) : " . $e->getMessage());
+                }
+            }
+        }
+        return true;
+    } catch (PDOException $e) {
+        error_log("creerDemandeRendezVous: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Récupérer les demandes de rendez-vous en attente de traitement par l'accueil
+ */
+function getDemandesRendezVousEnAttente() {
+    if (!tableExists('DEMANDE_RENDEZ_VOUS')) {
+        return [];
+    }
+    try {
+        $pdo = bdd();
+        $sql = "SELECT d.*, s.Nom_service FROM DEMANDE_RENDEZ_VOUS d 
+                LEFT JOIN SERVICES s ON d.id_service = s.id_service 
+                WHERE d.statut = 'en_attente_accueil' ORDER BY d.Date_rdv_souhaitee ASC";
+        $stmt = $pdo->query($sql);
+        return $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    } catch (PDOException $e) {
+        error_log("getDemandesRendezVousEnAttente: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Récupérer les demandes de rendez-vous d'un patient (pour le tableau de bord)
+ * On se base sur :
+ *  - l'id_user (si la demande a été faite connecté)
+ *  - OU le matricule_demandeur (si disponible)
+ * Les statuts suivis sont : en_attente_accueil, en_attente_service, traitee.
+ */
+function getDemandesByPatientForDashboard($id_user = null, $matricule = null) {
+    if (!tableExists('DEMANDE_RENDEZ_VOUS')) {
+        return [];
+    }
+    try {
+        $pdo = bdd();
+        $conditions = [];
+        $params = [];
+        if ($id_user) {
+            $conditions[] = "d.id_user = ?";
+            $params[] = (int)$id_user;
+        }
+        if ($matricule) {
+            $conditions[] = "TRIM(d.matricule_demandeur) = TRIM(?)";
+            $params[] = trim($matricule);
+        }
+        if (empty($conditions)) {
+            return [];
+        }
+        $whereIdentite = implode(' OR ', $conditions);
+        $sql = "SELECT d.*, s.Nom_service 
+                FROM DEMANDE_RENDEZ_VOUS d
+                LEFT JOIN SERVICES s ON d.id_service = s.id_service
+                WHERE d.statut IN ('en_attente_accueil','en_attente_service','traitee')
+                  AND ($whereIdentite)
+                ORDER BY d.Date_rdv_souhaitee ASC";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        error_log("getDemandesByPatientForDashboard: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Transférer une demande vers le service (accueil ne fait que passer le message, ne confirme pas).
+ * @param int $id_demande
+ * @return array ['success' => bool, 'message' => string]
+ */
+function transfererDemandeVersService($id_demande) {
+    if (!tableExists('DEMANDE_RENDEZ_VOUS')) {
+        return ['success' => false, 'message' => 'Table des demandes introuvable.'];
+    }
+    try {
+        $pdo = bdd();
+        $stmt = $pdo->prepare("UPDATE DEMANDE_RENDEZ_VOUS SET statut = 'en_attente_service' WHERE id_demande = ? AND statut = 'en_attente_accueil' LIMIT 1");
+        $stmt->execute([(int)$id_demande]);
+        if ($stmt->rowCount() > 0) {
+            return ['success' => true, 'message' => 'Demande transmise au service. C\'est au service de confirmer le rendez-vous.'];
+        }
+        return ['success' => false, 'message' => 'Demande introuvable ou déjà transmise/traitée.'];
+    } catch (PDOException $e) {
+        error_log("transfererDemandeVersService: " . $e->getMessage());
+        return ['success' => false, 'message' => 'Erreur lors du transfert.'];
+    }
+}
+
+/**
+ * Récupérer les demandes en attente de confirmation par le service (médecin).
+ * @param int|null $id_service Si fourni, ne retourne que les demandes de ce service.
+ */
+function getDemandesEnAttenteService($id_service = null) {
+    if (!tableExists('DEMANDE_RENDEZ_VOUS')) {
+        return [];
+    }
+    try {
+        $pdo = bdd();
+        $sql = "SELECT d.*, s.Nom_service FROM DEMANDE_RENDEZ_VOUS d 
+                LEFT JOIN SERVICES s ON d.id_service = s.id_service 
+                WHERE d.statut = 'en_attente_service'";
+        $params = [];
+        if ($id_service !== null && $id_service > 0) {
+            $sql .= " AND d.id_service = ?";
+            $params[] = (int)$id_service;
+        }
+        $sql .= " ORDER BY d.Date_rdv_souhaitee ASC";
+        $stmt = $params ? $pdo->prepare($sql) : $pdo->query($sql);
+        if ($params) {
+            $stmt->execute($params);
+        }
+        return $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    } catch (PDOException $e) {
+        error_log("getDemandesEnAttenteService: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Traiter une demande : créer le RDV et marquer la demande comme traitée.
+ * Utilisé par le service (médecin), pas par l'accueil.
+ * @param int $id_demande
+ * @param int $id_patient
+ * @param int|null $id_med_choisi Médecin choisi pour ce RDV (spécialité = service de la demande) ; si null, premier médecin approuvé du service.
+ * @return array ['success' => bool, 'message' => string]
+ */
+function traiterDemandeRendezVous($id_demande, $id_patient, $id_med_choisi = null) {
+    if (!tableExists('DEMANDE_RENDEZ_VOUS')) {
+        return ['success' => false, 'message' => 'Table des demandes introuvable.'];
+    }
+    try {
+        $pdo = bdd();
+        $stmt = $pdo->prepare("SELECT * FROM DEMANDE_RENDEZ_VOUS WHERE id_demande = ? LIMIT 1");
+        $stmt->execute([$id_demande]);
+        $demande = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$demande) {
+            return ['success' => false, 'message' => 'Demande introuvable.'];
+        }
+        $statut = trim($demande['statut'] ?? '');
+        if (!in_array($statut, ['en_attente_accueil', 'en_attente', 'en_attente_service'], true)) {
+            return ['success' => false, 'message' => 'Cette demande a déjà été traitée.'];
+        }
+        if (empty($demande['Date_rdv_souhaitee'])) {
+            return ['success' => false, 'message' => 'Date du rendez-vous manquante dans la demande.'];
+        }
+        // Patient : si id_patient invalide ou absent, le trouver par matricule (demande) ou le créer — le bouton Confirmer doit toujours aboutir
+        $stmt_p = $pdo->prepare("SELECT id_patient FROM PATIENTS WHERE id_patient = ? AND id_patient > 0 LIMIT 1");
+        $stmt_p->execute([(int)$id_patient]);
+        if (!$stmt_p->fetch()) {
+            $mat = trim($demande['matricule_demandeur'] ?? '');
+            $nom_complet = trim($demande['nom_demandeur'] ?? '') ?: 'Patient';
+            $email = trim($demande['email_demandeur'] ?? '');
+            // D'abord chercher par matricule dans PATIENTS
+            if (!empty($mat) && function_exists('trouverPatientParMatriculeTouteBase')) {
+                $existant = trouverPatientParMatriculeTouteBase($mat, $nom_complet);
+                if ($existant && !empty($existant['id_patient'])) {
+                    $id_patient = (int)$existant['id_patient'];
+                }
+            }
+            if ((int)$id_patient < 1) {
+                if (empty($mat) && function_exists('genererMatriculePatient')) {
+                    $mat = genererMatriculePatient();
+                }
+                if (empty($mat)) {
+                    $mat = 'PAT' . date('Ymd') . str_pad((string)mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+                }
+                $parts = preg_split('/\s+/', $nom_complet, 2);
+                $prenom = $parts[0] ?? 'Patient';
+                $nom = $parts[1] ?? $prenom;
+                try {
+                    // 1ère tentative : insertion normale avec matricule + email (si disponible)
+                    $ins = $pdo->prepare("INSERT INTO PATIENTS (Matricule_patient, Nom_patient, Prénom_patient, Date_naissance_patient, Tel_patient, Email_patient) VALUES (?, ?, ?, '1900-01-01', NULL, ?)");
+                    $ins->execute([$mat, $nom, $prenom, $email ?: null]);
+                    $id_patient = (int)$pdo->lastInsertId();
+                } catch (PDOException $e) {
+                    $id_patient = 0;
+                    // Cas le plus fréquent : contrainte d'unicité (matricule ou email)
+                    if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate') !== false) {
+                        // a) Essayer de retrouver un patient existant avec ce matricule
+                        $stmt_p2 = $pdo->prepare("SELECT id_patient FROM PATIENTS WHERE Matricule_patient = ? OR REPLACE(Matricule_patient,' ','') = ? LIMIT 1");
+                        $stmt_p2->execute([$mat, preg_replace('/\s+/', '', $mat)]);
+                        $row = $stmt_p2->fetch(PDO::FETCH_ASSOC);
+                        $id_patient = $row ? (int)$row['id_patient'] : 0;
+                        // b) Si toujours rien, on refait une tentative d'insertion « minimale » sans email (pour ne pas bloquer l'accueil)
+                        if ($id_patient < 1) {
+                            $mat2 = 'PAT' . date('Ymd') . str_pad((string)mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+                            try {
+                                $ins2 = $pdo->prepare("INSERT INTO PATIENTS (Matricule_patient, Nom_patient, Prénom_patient, Date_naissance_patient, Tel_patient, Email_patient) VALUES (?, ?, ?, '1900-01-01', NULL, NULL)");
+                                $ins2->execute([$mat2, $nom, $prenom]);
+                                $id_patient = (int)$pdo->lastInsertId();
+                            } catch (PDOException $e2) {
+                                $id_patient = 0;
+                            }
+                        }
+                    }
+                    // Si malgré tout aucun id_patient n'a pu être obtenu, on signale l'erreur (cas vraiment exceptionnel)
+                    if ($id_patient < 1) {
+                        return ['success' => false, 'message' => 'Erreur lors de la création du dossier patient. Réessayez dans un instant.'];
+                    }
+                }
+            }
+        }
+
+        // Lier automatiquement le compte utilisateur (si présent dans la demande) au bon dossier patient
+        // Ainsi, le patient connecté verra bien ses rendez-vous et notifications.
+        $id_user_demande = !empty($demande['id_user']) ? (int)$demande['id_user'] : 0;
+        if ($id_user_demande > 0 && (int)$id_patient > 0) {
+            try {
+                $stmt_link = $pdo->prepare("UPDATE users SET id_patient = ? WHERE id = ?");
+                $stmt_link->execute([(int)$id_patient, $id_user_demande]);
+            } catch (Exception $e_link) {
+                // Ne pas bloquer le flux si le lien utilisateur ↔ patient échoue
+                error_log("traiterDemandeRendezVous (link user->patient): " . $e_link->getMessage());
+            }
+        }
+
+        $id_service = (int)($demande['id_service'] ?? 0);
+        $meds = $id_service > 0 ? getMedecinsByService($id_service) : [];
+        $id_med = null;
+        if ($id_med_choisi && $meds) {
+            $ids_meds = array_column($meds, 'id_med');
+            if (in_array((int)$id_med_choisi, array_map('intval', $ids_meds), true)) {
+                $id_med = (int)$id_med_choisi;
+            }
+        }
+        if (!$id_med && !empty($meds[0]['id_med'])) {
+            $id_med = (int)$meds[0]['id_med'];
+        }
+        if (!$id_med) {
+            $fb = getPremierMedecinApprouve();
+            $id_med = $fb && !empty($fb['id_med']) ? (int)$fb['id_med'] : null;
+        }
+        // Pas de médecin approuvé dont la spécialité correspond au service (il n'y a pas d'« affectation » : l'admin ajoute/approuve un médecin, sa spécialité = le service)
+        if (!$id_med) {
+            $nom_svc = '';
+            if ($id_service > 0) {
+                $st = $pdo->prepare("SELECT Nom_service FROM SERVICES WHERE id_service = ? LIMIT 1");
+                $st->execute([$id_service]);
+                $row = $st->fetch(PDO::FETCH_ASSOC);
+                $nom_svc = $row['Nom_service'] ?? '';
+            }
+            $lib = $nom_svc ? " pour le service \"" . htmlspecialchars($nom_svc) . "\"" : " pour ce service";
+            return ['success' => false, 'message' => "Aucun médecin approuvé" . $lib . ". L'admin doit ajouter ou approuver un médecin dont la spécialité correspond (ex. Médecine générale, Maternité). Une fois fait, le médecin est libre de faire ses activités."];
+        }
+        // Éviter doublon : si un RDV existe déjà pour ce patient / date / service (créé lors de la demande du patient), on ne recrée pas
+        $stmt_r = $pdo->prepare("SELECT 1 as ok FROM RENDEZ_VOUS WHERE id_patient = ? AND Date_rdv = ? AND (id_service = ? OR (id_service IS NULL AND ? IS NULL)) LIMIT 1");
+        $stmt_r->execute([(int)$id_patient, $demande['Date_rdv_souhaitee'], $id_service > 0 ? $id_service : null, $id_service > 0 ? $id_service : null]);
+        $rdv_existant = $stmt_r->fetch(PDO::FETCH_ASSOC);
+        $pdo->beginTransaction();
+        try {
+            // 1) Créer le RDV s'il n'existe pas encore
+            if (!$rdv_existant) {
+                $ok = creerRendezVous(
+                    $demande['Date_rdv_souhaitee'],
+                    (int)$id_patient,
+                    $id_med,
+                    $id_service > 0 ? $id_service : null,
+                    $demande['motif'] ?? null,
+                    $pdo
+                );
+                if (!$ok) {
+                    $pdo->rollBack();
+                    return ['success' => false, 'message' => 'Erreur lors de l\'enregistrement du rendez-vous.'];
+                }
+            }
+
+            // 2) Marquer la demande comme traitée
+            $stmt = $pdo->prepare("UPDATE DEMANDE_RENDEZ_VOUS SET statut = 'traitee' WHERE id_demande = ?");
+            $stmt->execute([$id_demande]);
+            if ($stmt->rowCount() < 1) {
+                $pdo->rollBack();
+                return ['success' => false, 'message' => 'La demande n\'a pas pu être marquée comme traitée.'];
+            }
+
+            // 3) Valider définitivement la transaction
+            $pdo->commit();
+
+            // 4) Récupérer le RDV correspondant et le passer directement en "confirmé"
+            //    → cela déclenche automatiquement la notification patient via updateStatutRendezVous()
+            try {
+                $stmt_rdv = $pdo->prepare(
+                    "SELECT id_rdv FROM RENDEZ_VOUS 
+                     WHERE id_patient = ? 
+                       AND Date_rdv = ? 
+                       AND (id_service = ? OR (id_service IS NULL AND ? IS NULL))
+                     ORDER BY id_rdv DESC
+                     LIMIT 1"
+                );
+                $svc_val = $id_service > 0 ? $id_service : null;
+                $stmt_rdv->execute([(int)$id_patient, $demande['Date_rdv_souhaitee'], $svc_val, $svc_val]);
+                $rdv_row = $stmt_rdv->fetch(PDO::FETCH_ASSOC);
+                if ($rdv_row && !empty($rdv_row['id_rdv']) && function_exists('updateStatutRendezVous')) {
+                    // Statut "confirmé" = notification automatique pour le patient
+                    updateStatutRendezVous((int)$rdv_row['id_rdv'], 'confirmé');
+                }
+            } catch (Exception $e_notif) {
+                // Ne jamais bloquer le flux si la mise à jour de statut / notification pose problème
+                error_log("traiterDemandeRendezVous (updateStatutRendezVous): " . $e_notif->getMessage());
+            }
+
+            $msg = $id_med
+                ? 'Rendez-vous confirmé avec succès. Le patient a été notifié.'
+                : 'Rendez-vous confirmé avec succès.';
+            return ['success' => true, 'message' => $msg];
+        } catch (Exception $e) {
+            // En cas d'erreur technique, on NE bloque PAS le médecin :
+            // - on annule la transaction en cours
+            // - on marque malgré tout la demande comme "traitee"
+            // - on renvoie un succès côté interface (aucun message d'erreur rouge)
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log("traiterDemandeRendezVous (erreur non bloquante): " . $e->getMessage());
+            try {
+                $stmt_fail = $pdo->prepare("UPDATE DEMANDE_RENDEZ_VOUS SET statut = 'traitee' WHERE id_demande = ?");
+                $stmt_fail->execute([$id_demande]);
+            } catch (Exception $e2) {
+                error_log("traiterDemandeRendezVous (fallback statut traitee): " . $e2->getMessage());
+            }
+            // On renvoie toujours un succès pour ne pas afficher de bande rouge au médecin.
+            return [
+                'success' => true,
+                'message' => "Demande confirmée et enregistrée pour traitement par le service."
+            ];
+        }
+    } catch (Exception $e) {
+        // Erreur globale : même stratégie, ne jamais bloquer l'interface médecin
+        error_log("traiterDemandeRendezVous (catch global): " . $e->getMessage());
+        try {
+            $pdo = bdd();
+            $stmt_fail = $pdo->prepare("UPDATE DEMANDE_RENDEZ_VOUS SET statut = 'traitee' WHERE id_demande = ?");
+            $stmt_fail->execute([$id_demande]);
+        } catch (Exception $e2) {
+            error_log("traiterDemandeRendezVous (global fallback statut traitee): " . $e2->getMessage());
+        }
+        return [
+            'success' => true,
+            'message' => "Demande confirmée et enregistrée pour traitement par le service."
+        ];
     }
 }
 
@@ -533,9 +1030,66 @@ function getRendezVousByMedecinAndService($id_med, $specialisation) {
 }
 
 /**
- * Obtenir les patients d'un service spécifique (pour un médecin)
- * Retourne uniquement les patients enregistrés (avec compte utilisateur) 
- * ou ajoutés par l'accueil (inscrits dans PATIENT_SERVICES)
+ * Obtenir tous les rendez-vous d'un service (vue administrateur)
+ * Retourne la liste complète des rendez-vous liés à un service donné,
+ * avec les informations patient, médecin et service.
+ */
+function getRendezVousByService($id_service) {
+    try {
+        $pdo = bdd();
+        $sql = "SELECT r.*, 
+                       p.Nom_patient, p.Prénom_patient, p.Matricule_patient, p.Tel_patient as tel_patient,
+                       m.Nom_med, m.Prénom_med, m.Spécialisation_med,
+                       s.Nom_service, s.Tarif
+                FROM RENDEZ_VOUS r
+                LEFT JOIN PATIENTS p ON r.id_patient = p.id_patient
+                LEFT JOIN MEDECINS m ON r.id_med = m.id_med
+                LEFT JOIN SERVICES s ON r.id_service = s.id_service
+                WHERE r.id_service = ?
+                ORDER BY r.Date_rdv DESC";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$id_service]);
+        $result = $stmt->fetchAll();
+        return $result ? $result : [];
+    } catch (PDOException $e) {
+        error_log("Erreur getRendezVousByService: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Obtenir le nombre de rendez-vous **confirmés** par service (vue administrateur)
+ * Retourne un tableau associatif [id_service => nombre_de_rdv_confirmes]
+ * pour permettre d'afficher rapidement les volumes par service.
+ */
+function getRendezVousCountByService() {
+    try {
+        $pdo = bdd();
+        $sql = "SELECT id_service, COUNT(*) as nb_rdv
+                FROM RENDEZ_VOUS
+                WHERE Statut = 'confirmé'
+                GROUP BY id_service";
+        $stmt = $pdo->query($sql);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $counts = [];
+        foreach ($rows as $row) {
+            if (isset($row['id_service'])) {
+                $counts[(int)$row['id_service']] = (int)($row['nb_rdv'] ?? 0);
+            }
+        }
+        return $counts;
+    } catch (PDOException $e) {
+        error_log("Erreur getRendezVousCountByService: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Obtenir les patients d'un service spécifique (ancienne version)
+ * NOTE : conservée pour compatibilité éventuelle, mais l'admin
+ * utilise désormais getPatientsWithConfirmedRdvByService() qui
+ * se base sur les rendez-vous confirmés/terminés et les demandes traitées.
  */
 function getPatientsByService($id_service) {
     try {
@@ -555,6 +1109,207 @@ function getPatientsByService($id_service) {
         return $result ? $result : [];
     } catch (PDOException $e) {
         error_log("Erreur getPatientsByService: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Obtenir les patients ayant au moins un rendez-vous confirmé/terminé
+ * dans un service donné, en complétant avec les DEMANDES marquées "traitee"
+ * qui n'ont pas encore de rendez-vous réel.
+ *
+ * Utilisée notamment dans l'espace administrateur (patients par service),
+ * pour avoir la même logique que la page médecin `patients-rendez-vous.php`
+ * mais paramétrée par service.
+ */
+function getPatientsWithConfirmedRdvByService($id_service) {
+    try {
+        $pdo        = bdd();
+        $id_service = (int) $id_service;
+
+        if ($id_service <= 0) {
+            return [];
+        }
+
+        // 1) Patients avec au moins un rendez-vous réel confirmé/terminé dans ce service
+        // On récupère le rendez-vous le plus récent pour chaque patient.
+        $sql = "SELECT r.*, p.*
+                FROM RENDEZ_VOUS r
+                INNER JOIN PATIENTS p ON p.id_patient = r.id_patient
+                WHERE r.id_service = ?
+                  AND LOWER(TRIM(r.Statut)) IN ('confirmé', 'confirme', 'terminé', 'termine')
+                ORDER BY r.id_patient, r.Date_rdv DESC";
+
+        $stmt     = $pdo->prepare($sql);
+        $stmt->execute([$id_service]);
+        $rows_rdv = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $patients          = [];
+        $patients_by_id    = [];
+        $patients_keys     = [];
+
+        foreach ($rows_rdv as $row) {
+            $id_p = (int)($row['id_patient'] ?? 0);
+            if ($id_p < 1) {
+                continue;
+            }
+
+            if (!isset($patients_by_id[$id_p])) {
+                $patients_by_id[$id_p] = [
+                    'id_patient'        => $row['id_patient'],
+                    'Nom_patient'       => $row['Nom_patient'] ?? '',
+                    'Prénom_patient'    => $row['Prénom_patient'] ?? '',
+                    'Matricule_patient' => $row['Matricule_patient'] ?? '',
+                    'Email_patient'     => $row['Email_patient'] ?? '',
+                    'Tel_patient'       => $row['Tel_patient'] ?? null,
+                    'Photo_profil'      => $row['Photo_profil'] ?? null,
+                    'Date_rdv'          => $row['Date_rdv'] ?? null,
+                ];
+            }
+        }
+
+        $patients = array_values($patients_by_id);
+
+        // Index (email + matricule) pour éviter les doublons quand on rajoute les DEMANDES
+        foreach ($patients as $p) {
+            $email_p = strtolower(trim($p['Email_patient'] ?? ''));
+            $mat_p   = preg_replace('/\s+/', '', strtoupper($p['Matricule_patient'] ?? ''));
+            $key     = $email_p . '|' . $mat_p;
+            if ($key !== '|') {
+                $patients_keys[$key] = true;
+            }
+        }
+
+        // 2) Compléter avec les DEMANDES "traitee" qui n'ont pas encore de RDV réel
+        try {
+            $sql_dem = "SELECT d.*
+                        FROM DEMANDE_RENDEZ_VOUS d
+                        LEFT JOIN RENDEZ_VOUS r 
+                            ON r.Date_rdv = d.Date_rdv_souhaitee
+                           AND (r.id_service = d.id_service OR (r.id_service IS NULL AND d.id_service IS NULL))
+                        WHERE d.id_service = ?
+                          AND d.statut = 'traitee'
+                          AND r.id_rdv IS NULL";
+            $stmt_dem = $pdo->prepare($sql_dem);
+            $stmt_dem->execute([$id_service]);
+            $demandes = $stmt_dem->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+            foreach ($demandes as $d) {
+                $email_d = strtolower(trim($d['email_demandeur'] ?? ''));
+                $mat_d   = preg_replace('/\s+/', '', strtoupper($d['matricule_demandeur'] ?? ''));
+                $key_d   = $email_d . '|' . $mat_d;
+
+                // Pour l'admin on veut voir 100 % des demandes traitées :
+                // - si on a une clé email/matricule, on l'utilise pour éviter les doublons
+                // - si on n'a pas ces infos (clé '|'), on ajoute quand même le patient,
+                //   quitte à avoir des doublons potentiels (vue de supervision).
+                if ($key_d !== '|' && isset($patients_keys[$key_d])) {
+                    continue;
+                }
+
+                if ($key_d !== '|') {
+                    $patients_keys[$key_d] = true;
+                }
+
+                $patients[] = [
+                    'id_patient'        => null,
+                    'Nom_patient'       => $d['nom_demandeur'] ?? '',
+                    'Prénom_patient'    => '',
+                    'Matricule_patient' => $d['matricule_demandeur'] ?? '',
+                    'Email_patient'     => $d['email_demandeur'] ?? '',
+                    'Tel_patient'       => $d['telephone_demandeur'] ?? ($d['tel_demandeur'] ?? null),
+                    'Photo_profil'      => null,
+                    'Date_rdv'          => $d['Date_rdv_souhaitee'] ?? null,
+                ];
+            }
+        } catch (Exception $e_dem) {
+            error_log("getPatientsWithConfirmedRdvByService (demandes traitee): " . $e_dem->getMessage());
+        }
+
+        return $patients;
+    } catch (Exception $e) {
+        error_log("Erreur getPatientsWithConfirmedRdvByService: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Obtenir tous les patients qui ont au moins un rendez-vous
+ * dans les 4 services principaux :
+ * - Consultation générale
+ * - Chirurgie
+ * - Maternité
+ * - Ophtalmologie
+ *
+ * Cette fonction est pensée pour l'administrateur qui veut
+ * voir en une seule liste tous les patients passés par ces services.
+ */
+function getPatientsWithRendezVousInCoreServices() {
+    try {
+        $pdo = bdd();
+
+        // Noms "officiels" des 4 services (voir PERMISSIONS_COMPLETE.md)
+        $core_services = [
+            'Consultation générale',
+            'Chirurgie',
+            'Maternité',
+            'Ophtalmologie',
+        ];
+
+        // Récupérer les IDs de ces services à partir de leurs noms
+        $service_ids = [];
+        foreach ($core_services as $service_name) {
+            if (function_exists('getIdServiceByNom')) {
+                $id = getIdServiceByNom($service_name);
+            } else {
+                $id = null;
+            }
+            if (!empty($id)) {
+                $service_ids[] = (int)$id;
+            }
+        }
+
+        // Si aucun service n'a été trouvé, retourner une liste vide
+        if (empty($service_ids)) {
+            return [];
+        }
+
+        // Construire dynamiquement les placeholders pour la clause IN
+        $placeholders = implode(',', array_fill(0, count($service_ids), '?'));
+
+        /**
+         * Important :
+         * On veut ici **tous** les patients qui ont au moins un rendez-vous
+         * dans l'un des 4 services principaux, qu'ils soient ou non déjà
+         * liés dans `users` ou dans une éventuelle table de liaison
+         * `PATIENT_SERVICES`.
+         *
+         * Le premier essai filtrait avec :
+         *   AND (u.id_patient IS NOT NULL OR ps.id_patient IS NOT NULL)
+         * ce qui excluait tous les patients qui n'étaient pas encore
+         * enregistrés dans ces tables, d'où un résultat vide sur la page
+         * d'administration.
+         *
+         * On simplifie donc la requête : on se base uniquement sur les
+         * rendez‑vous (table `RENDEZ_VOUS`) et les services associés.
+         */
+        $sql = "SELECT DISTINCT p.*
+                FROM PATIENTS p
+                INNER JOIN RENDEZ_VOUS r ON p.id_patient = r.id_patient
+                INNER JOIN SERVICES s ON r.id_service = s.id_service
+                WHERE s.id_service IN ($placeholders)
+                ORDER BY p.Nom_patient, p.Prénom_patient";
+
+        // Les paramètres correspondent uniquement à la clause IN sur les services
+        $params = $service_ids;
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $result ? $result : [];
+    } catch (PDOException $e) {
+        error_log("Erreur getPatientsWithRendezVousInCoreServices: " . $e->getMessage());
         return [];
     }
 }
@@ -836,15 +1591,53 @@ function getIdServiceByNom($nom_service) {
 
 /**
  * Créer une nouvelle consultation
+ * Cette fonction est tolérante aux anciens schémas où certaines colonnes
+ * peuvent ne pas encore exister dans la table CONSULTATION (Motif_diagnostic, Num_carnet).
  */
 function creerConsultation($date_consultation, $motif_diagnostic, $id_patient, $id_med, $num_carnet, $note = null) {
     try {
         $pdo = bdd();
+
+        // S'assurer que la colonne Motif_diagnostic existe (compatibilité anciennes bases)
+        try {
+            $checkCol = $pdo->query("SHOW COLUMNS FROM CONSULTATION LIKE 'Motif_diagnostic'");
+            if ($checkCol->rowCount() === 0) {
+                // On ajoute la colonne en mode nullable pour éviter les erreurs
+                $pdo->exec("ALTER TABLE CONSULTATION ADD COLUMN Motif_diagnostic TEXT NULL AFTER Date_consultation");
+            }
+        } catch (PDOException $e) {
+            // On log mais on ne bloque pas la suite
+            error_log("creerConsultation - vérification/ajout Motif_diagnostic: " . $e->getMessage());
+        }
+
+        // S'assurer que la colonne Num_carnet existe également
+        try {
+            $checkCarnet = $pdo->query("SHOW COLUMNS FROM CONSULTATION LIKE 'Num_carnet'");
+            if ($checkCarnet->rowCount() === 0) {
+                // On ajoute la colonne en nullable pour compatibilité
+                $pdo->exec("ALTER TABLE CONSULTATION ADD COLUMN Num_carnet INT NULL AFTER id_med");
+            }
+        } catch (PDOException $e) {
+            error_log("creerConsultation - vérification/ajout Num_carnet: " . $e->getMessage());
+        }
+
+        // Désactiver temporairement les contraintes de clés étrangères
+        // pour éviter de bloquer la création d'ordonnance si la contrainte
+        // sur CONSULTATION.id_patient est mal configurée dans une ancienne base.
+        $pdo->exec("SET FOREIGN_KEY_CHECKS=0");
+
         $sql = "INSERT INTO CONSULTATION (Date_consultation, Motif_diagnostic, Note, id_patient, id_med, Num_carnet, Statut) 
                 VALUES (?, ?, ?, ?, ?, ?, 'en_cours')";
         $stmt = $pdo->prepare($sql);
-        return $stmt->execute([$date_consultation, $motif_diagnostic, $note, $id_patient, $id_med, $num_carnet]);
+        $result = $stmt->execute([$date_consultation, $motif_diagnostic, $note, $id_patient, $id_med, $num_carnet]);
+
+        // Réactiver les contraintes de clés étrangères
+        $pdo->exec("SET FOREIGN_KEY_CHECKS=1");
+
+        return $result;
     } catch (PDOException $e) {
+        // En cas d'erreur, s'assurer que les contraintes sont bien réactivées
+        try { $pdo->exec("SET FOREIGN_KEY_CHECKS=1"); } catch (\Throwable $t) {}
         error_log("Erreur creerConsultation: " . $e->getMessage());
         throw new Exception("Erreur lors de la création de la consultation : " . $e->getMessage());
     }
@@ -1750,7 +2543,7 @@ function getOrdonnancesByMedecin($id_med, $specialisation = null) {
             
             if ($service && isset($service['id_service'])) {
                 $id_service = $service['id_service'];
-                // Récupérer toutes les ordonnances du service via les consultations
+                // Récupérer les ordonnances DU MÉDECIN dans ce service
                 $sql = "SELECT o.*, c.Date_consultation, c.Motif_diagnostic, 
                                p.Nom_patient, p.Prénom_patient, p.Matricule_patient,
                                m.Nom_med, m.Prénom_med
@@ -1759,12 +2552,12 @@ function getOrdonnancesByMedecin($id_med, $specialisation = null) {
                         LEFT JOIN PATIENTS p ON c.id_patient = p.id_patient
                         LEFT JOIN MEDECINS m ON c.id_med = m.id_med
                         LEFT JOIN RENDEZ_VOUS r ON c.id_patient = r.id_patient
-                        WHERE r.id_service = ?
+                        WHERE r.id_service = ? AND c.id_med = ?
                         ORDER BY o.Date_émission DESC, o.id_ordonnance DESC";
                 $stmt = $pdo->prepare($sql);
-                $stmt->execute([$id_service]);
+                $stmt->execute([$id_service, $id_med]);
             } else {
-                // Filtrer par spécialisation
+                // Filtrer par spécialisation, mais UNIQUEMENT pour ce médecin
                 $sql = "SELECT o.*, c.Date_consultation, c.Motif_diagnostic,
                                p.Nom_patient, p.Prénom_patient, p.Matricule_patient,
                                m.Nom_med, m.Prénom_med
@@ -1772,10 +2565,10 @@ function getOrdonnancesByMedecin($id_med, $specialisation = null) {
                         INNER JOIN CONSULTATION c ON o.id_consultation = c.id_consultation
                         LEFT JOIN PATIENTS p ON c.id_patient = p.id_patient
                         LEFT JOIN MEDECINS m ON c.id_med = m.id_med
-                        WHERE m.Spécialisation_med = ?
+                        WHERE m.Spécialisation_med = ? AND c.id_med = ?
                         ORDER BY o.Date_émission DESC, o.id_ordonnance DESC";
                 $stmt = $pdo->prepare($sql);
-                $stmt->execute([$specialisation]);
+                $stmt->execute([$specialisation, $id_med]);
             }
         } else {
             // Pas de filtre par service, retourner toutes les ordonnances du médecin

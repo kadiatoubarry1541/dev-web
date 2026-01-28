@@ -20,19 +20,15 @@ if (estConnecte()) {
     $user_info = getUserInfo();
     $role = $user_info['role'] ?? 'patient';
     
-    // Vérifier les permissions : seuls les utilisateurs autorisés peuvent créer des rendez-vous
-    // Admin, Médecin, Patient et Accueil peuvent créer des rendez-vous
-    if (!hasPermission('create_rendez_vous') && !hasPermission('manage_rendez_vous')) {
-        // Si l'utilisateur n'a aucune permission pour créer des rendez-vous, rediriger
-        header('Location: index.php?error=no_permission');
-        exit();
-    }
-    
-    // Patient connecté = toute personne connectée avec le rôle patient (on ne revérifie pas son dossier)
+    // Vérifier les permissions : accès à la page de prise de rendez-vous
     $is_patient_connected = isPatient();
     $is_accueil = isAccueil();
     $is_medecin = isMedecin();
     $is_admin = isAdmin();
+    if (!hasPermission('create_rendez_vous') && !hasPermission('manage_rendez_vous')) {
+        header('Location: index.php?error=no_permission');
+        exit();
+    }
     
     // Si le patient est connecté, récupérer ses informations
     if ($is_patient_connected) {
@@ -225,366 +221,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rechercher_patient'])
 }
 
 // Traitement du formulaire de rendez-vous
+// Objectif : pour le patient, dès que les champs obligatoires sont remplis (nom, service, date/heure),
+// la demande doit toujours être enregistrée, sans autres blocages liés au matricule, au dossier patient ou au médecin.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_rdv'])) {
-    $id_service = !empty($_POST['id_service']) ? intval($_POST['id_service']) : null;
-    $id_med = !empty($_POST['id_med']) ? intval($_POST['id_med']) : null;
-    $id_patient = null;
-    $nom_patient = trim($_POST['nom_patient'] ?? '');
+    $id_service        = !empty($_POST['id_service']) ? intval($_POST['id_service']) : null;
+    $nom_patient       = trim($_POST['nom_patient'] ?? '');
     $matricule_patient = trim($_POST['matricule_patient'] ?? '');
-    $date_heure_rdv = $_POST['date_heure_rdv'] ?? '';
-    $motif = trim($_POST['motif'] ?? '');
-    
-    // ——— PATIENT CONNECTÉ : reprendre id_patient depuis PATIENTS (email prioritaire) pour éviter "patient n'existe pas"
-    if ($is_patient_connected && $user_info) {
-        $email_pat = trim($user_info['email'] ?? '');
-        if (!empty($email_pat)) {
-            try {
-                $pdo_rdv = bdd();
-                $stmt_em = $pdo_rdv->prepare("SELECT id_patient, Matricule_patient, Nom_patient, Prénom_patient FROM PATIENTS WHERE LOWER(TRIM(COALESCE(Email_patient,''))) = LOWER(?) LIMIT 1");
-                $stmt_em->execute([$email_pat]);
-                $ex = $stmt_em->fetch(PDO::FETCH_ASSOC);
-                if ($ex && !empty($ex['id_patient'])) {
-                    $id_patient = (int) $ex['id_patient'];
-                    $patient_trouve = $ex;
-                    $_SESSION['id_patient'] = $id_patient;
-                    $_SESSION['matricule_patient'] = $ex['Matricule_patient'] ?? null;
-                    $user_info['id_patient'] = $id_patient;
-                    $pdo_rdv->prepare("UPDATE users SET id_patient = ? WHERE id = ?")->execute([$id_patient, (int)($_SESSION['user_id'] ?? 0)]);
-                }
-            } catch (Exception $e) {
-                error_log("Recherche patient par email (RDV): " . $e->getMessage());
-            }
-        }
-        if (empty($id_patient) && $patient_trouve && !empty($patient_trouve['id_patient'])) {
-            $id_patient = (int) $patient_trouve['id_patient'];
-        }
-        if (empty($id_patient) && !empty($_SESSION['id_patient'])) {
-            $id_patient = (int) $_SESSION['id_patient'];
-        }
-        if (empty($id_patient) && !empty($user_info['id_patient'])) {
-            $id_patient = (int) $user_info['id_patient'];
-        }
-        if (empty($id_patient) && !empty($user_info['matricule_patient'])) {
-            $p = trouverPatientParMatriculeTouteBase($user_info['matricule_patient'], $user_info['nom'] ?? '');
-            if ($p && !empty($p['id_patient'])) {
-                $id_patient = (int) $p['id_patient'];
-                $_SESSION['id_patient'] = $id_patient;
-                $patient_trouve = $p;
-                $user_info['id_patient'] = $id_patient;
-            }
-        }
-        // Fallback : résoudre à partir du formulaire (souvent pré-rempli avec nom/matricule du patient)
-        if (!$id_patient && !empty($matricule_patient)) {
-            $p = trouverPatientParMatriculeTouteBase($matricule_patient, $nom_patient);
-            if ($p && !empty($p['id_patient'])) {
-                $id_patient = (int) $p['id_patient'];
-                $_SESSION['id_patient'] = $id_patient;
-                $patient_trouve = $p;
-                $user_info['id_patient'] = $id_patient;
-            }
-        }
-        
-        // Lier un dossier existant (même email) ou créer le dossier : le patient peut réserver sans passer par l'accueil
-        if (!$id_patient) {
-            try {
-                $pdo = bdd();
-                $email = trim($user_info['email'] ?? '');
-                if (!empty($email)) {
-                    $stmt_em = $pdo->prepare("SELECT * FROM PATIENTS WHERE LOWER(TRIM(COALESCE(Email_patient,''))) = LOWER(?) LIMIT 1");
-                    $stmt_em->execute([$email]);
-                    $ex = $stmt_em->fetch(PDO::FETCH_ASSOC);
-                    if ($ex && !empty($ex['id_patient'])) {
-                        $id_patient = (int) $ex['id_patient'];
-                        $patient_trouve = $ex;
-                        $_SESSION['id_patient'] = $id_patient;
-                        $_SESSION['matricule_patient'] = $ex['Matricule_patient'] ?? null;
-                        $user_info['id_patient'] = $id_patient;
-                        $pdo->prepare("UPDATE users SET id_patient = ? WHERE id = ?")->execute([$id_patient, (int)($_SESSION['user_id'] ?? 0)]);
-                    }
-                }
-                if (!$id_patient && function_exists('genererMatriculePatient')) {
-                    $nom_complet = trim($user_info['nom'] ?? '');
-                    $email = trim($user_info['email'] ?? '');
-                    if (!empty($nom_complet) || !empty($email)) {
-                        $matricule = genererMatriculePatient();
-                    $parts = explode(' ', $nom_complet, 2);
-                    $prenom_pat = !empty($parts[0]) ? trim($parts[0]) : 'Patient';
-                    $nom_pat = !empty($parts[1]) ? trim($parts[1]) : $prenom_pat;
-                    $tel = $_SESSION['telephone'] ?? $user_info['telephone'] ?? null;
-                    $sql_pat = "INSERT INTO PATIENTS (Matricule_patient, Nom_patient, Prénom_patient, Date_naissance_patient, Tel_patient, Email_patient, Adresse_patient) 
-                                VALUES (?, ?, ?, '1900-01-01', ?, ?, NULL)";
-                    $stmt_pat = $pdo->prepare($sql_pat);
-                    $stmt_pat->execute([$matricule, $nom_pat, $prenom_pat, $tel, $email ?: null]);
-                    $new_id = (int) $pdo->lastInsertId();
-                    if ($new_id) {
-                        $id_patient = $new_id;
-                        $patient_trouve = [
-                            'id_patient' => $new_id,
-                            'Matricule_patient' => $matricule,
-                            'Nom_patient' => $nom_pat,
-                            'Prénom_patient' => $prenom_pat,
-                            'Email_patient' => $email,
-                            'Tel_patient' => $tel
-                        ];
-                        $_SESSION['id_patient'] = $new_id;
-                        $_SESSION['matricule_patient'] = $matricule;
-                        $user_info['id_patient'] = $new_id;
-                        // Lier le compte users à ce dossier
-                        $stmt_user = $pdo->prepare("UPDATE users SET id_patient = ? WHERE id = ?");
-                        $stmt_user->execute([$new_id, (int)($_SESSION['user_id'] ?? 0)]);
-                    }
-                }
-                }
-            } catch (Exception $e) {
-                error_log("Création dossier patient à la volée (rendez-vous): " . $e->getMessage());
-            }
-        }
-    }
-    
-    // Recherche par formulaire uniquement pour les non-connectés (accueil, visiteur, etc.)
-    if (!$is_patient_connected && !$id_patient && !empty($matricule_patient)) {
-        try {
-            $patient_found = trouverPatientParMatriculeTouteBase($matricule_patient, $nom_patient);
-            if ($patient_found && !empty($patient_found['id_patient'])) {
-                $id_patient = (int) $patient_found['id_patient'];
-                $patient_trouve = $patient_found;
-                $_SESSION['id_patient'] = $id_patient;
-                $_SESSION['patient_rdv'] = $patient_found;
-                if ($user_info) { $user_info['id_patient'] = $id_patient; }
-            } else {
-                $message = "Ce matricule n'est pas enregistré. Vérifiez le matricule ou présentez-vous à l'accueil pour vous inscrire.";
-                $message_type = "danger";
-            }
-        } catch (Exception $e) {
-            error_log("Erreur recherche patient: " . $e->getMessage());
-            $message = "Recherche impossible pour ce matricule. Réessayez ou vérifiez le matricule.";
-            $message_type = "danger";
-        }
-    }
-    
-    
-    // Assigner automatiquement un médecin : d'abord du service choisi, sinon n'importe quel médecin approuvé (pour que le patient avec matricule valide puisse toujours réserver)
-    if ($id_service && !$id_med) {
-        $medecins_service = getMedecinsByService($id_service);
-        if (!empty($medecins_service)) {
-            $id_med = intval($medecins_service[0]['id_med']);
-        } else {
-            $fallback = getPremierMedecinApprouve();
-            if ($fallback && !empty($fallback['id_med'])) {
-                $id_med = (int) $fallback['id_med'];
-            }
-        }
-    }
-    
-    // Validation — tant que le matricule existe en base, on évite les messages d'erreur bloquants
+    $email_demandeur   = trim($_POST['email'] ?? '');
+    $date_heure_rdv    = $_POST['date_heure_rdv'] ?? '';
+    $motif             = trim($_POST['motif'] ?? '');
+
+    // 1. Vérification MINIMALE : les 3 champs obligatoires
     if (empty($date_heure_rdv)) {
-        $message = "Veuillez remplir tous les champs obligatoires.";
+        $message = "Veuillez indiquer la date et l'heure du rendez-vous.";
         $message_type = "danger";
-    } elseif (!$is_patient_connected && empty($nom_patient)) {
+    } elseif (empty($nom_patient)) {
         $message = "Veuillez saisir le nom du patient.";
-        $message_type = "danger";
-    } elseif (!$is_patient_connected && empty($matricule_patient)) {
-        $message = "Veuillez saisir le matricule du patient.";
         $message_type = "danger";
     } elseif (empty($id_service)) {
         $message = "Veuillez sélectionner un service.";
         $message_type = "danger";
-    } elseif (empty($id_med)) {
-        // Dernier recours : un médecin approuvé (n'importe quel service) pour ne pas bloquer le patient avec matricule valide
-        $fallback = getPremierMedecinApprouve();
-        if ($fallback && !empty($fallback['id_med'])) {
-            $id_med = (int) $fallback['id_med'];
-            if (!empty($fallback['id_service'])) {
-                $id_service = (int) $fallback['id_service'];
-            }
-        } else {
-            $message = "Aucun médecin disponible pour le moment. Réessayez plus tard.";
+    } else {
+        // 2. Si les champs sont remplis, on doit TOUJOURS enregistrer quelque chose
+        // On enregistre systématiquement une DEMANDE_RENDEZ_VOUS
+        $ts = @strtotime(trim($date_heure_rdv));
+        $date_rdv_mysql = ($ts !== false && $ts > 0) ? date('Y-m-d H:i:s', $ts) : null;
+
+        if (!$date_rdv_mysql) {
+            // Si le format est vraiment illisible, on renvoie juste un message sur le format
+            $message = "Indiquez la date et l'heure du rendez-vous au bon format (ex. 28/01/2026 14:30).";
             $message_type = "danger";
-        }
-    } elseif ($is_patient_connected && empty($id_patient)) {
-        $message = "Nous n'avons pas pu identifier votre dossier patient. Vérifiez que votre profil (nom, email) est renseigné, puis réessayez. Si le problème persiste, l'accueil pourra vous aider à la clinique.";
-        $message_type = "danger";
-    } elseif (empty($id_patient) && ($message_type !== 'danger' || strpos($message ?? '', "n'existe pas") === false)) {
-        // Création automatique uniquement si on n'a pas déjà dit "matricule introuvable"
-        if (!empty($matricule_patient) && !empty($nom_patient)) {
-            try {
-                $pdo = bdd();
-                $matricule_clean = trim(preg_replace('/\s+/', '', $matricule_patient));
-                $nom_parts = explode(' ', trim($nom_patient), 2);
-                $prenom_patient = !empty($nom_parts[0]) ? trim($nom_parts[0]) : '';
-                $nom_patient_db = !empty($nom_parts[1]) ? trim($nom_parts[1]) : (!empty($nom_parts[0]) ? trim($nom_parts[0]) : '');
-                if (empty($prenom_patient) && !empty($nom_patient_db)) {
-                    $prenom_patient = $nom_patient_db;
-                    $nom_patient_db = '';
-                }
-                $sql_create = "INSERT INTO PATIENTS (Matricule_patient, Nom_patient, Prénom_patient, Date_naissance_patient) VALUES (?, ?, ?, '1900-01-01')";
-                $stmt_create = $pdo->prepare($sql_create);
-                $stmt_create->execute([$matricule_clean, $nom_patient_db, $prenom_patient]);
-                $id_patient = $pdo->lastInsertId();
-                if ($id_patient) {
-                    $stmt_get = $pdo->prepare("SELECT * FROM PATIENTS WHERE id_patient = ? LIMIT 1");
-                    $stmt_get->execute([$id_patient]);
-                    $patient_created = $stmt_get->fetch(PDO::FETCH_ASSOC);
-                    if ($patient_created) {
-                        $id_patient = intval($patient_created['id_patient']);
-                        $patient_trouve = $patient_created;
-                        $_SESSION['id_patient'] = $id_patient;
-                        $_SESSION['patient_rdv'] = $patient_created;
-                        if ($user_info) { $user_info['id_patient'] = $id_patient; }
-                    }
-                }
-            } catch (Exception $e) {
-                error_log("Erreur création automatique patient: " . $e->getMessage());
-                $message = "Enregistrement impossible pour le moment. Réessayez.";
+        } elseif (!function_exists('creerDemandeRendezVous')) {
+            // Sécurité : fonction manquante côté serveur
+            $message = "Le système de demande de rendez-vous n'est pas disponible pour le moment.";
+            $message_type = "danger";
+        } else {
+            // Préparer les infos de la demande
+            $email_d = $is_patient_connected && $user_info ? trim($user_info['email'] ?? '') : $email_demandeur;
+            $nom_d   = $nom_patient;
+            $mat_d   = $is_patient_connected && $user_info
+                ? (trim($user_info['matricule_patient'] ?? '') ?: $matricule_patient)
+                : $matricule_patient;
+            $id_user = ($is_patient_connected && !empty($_SESSION['user_id'])) ? (int)$_SESSION['user_id'] : null;
+
+            // 3. Enregistrement SYSTÉMATIQUE de la demande (aucun blocage sur matricule/dossier)
+            if (creerDemandeRendezVous(
+                $date_rdv_mysql,
+                $email_d ?: null,
+                $nom_d,
+                $mat_d ?: null,
+                (int)$id_service,
+                $motif,
+                $id_user
+            )) {
+                $message = "Votre demande de rendez-vous a été enregistrée. L'accueil la transmettra au service, puis un médecin la confirmera.";
+                $message_type = "success";
+                $_POST = [];
+            } else {
+                // Seul cas d'échec : vrai problème technique côté base/fonction
+                $message = "L'enregistrement de la demande a échoué. Veuillez réessayer dans un instant.";
                 $message_type = "danger";
             }
-        }
-    }
-    
-    // Si on a un id_patient, un service et une date, créer le rendez-vous (ids validés/corrigés avant)
-    if (!empty($id_patient) && !empty($id_service) && !empty($date_heure_rdv) && (empty($message_type) || $message_type !== "danger")) {
-        try {
-            $pdo = bdd();
-            
-            // Vérifier que les IDs existent en base pour éviter toute erreur technique
-            $stmt_p = $pdo->prepare("SELECT id_patient FROM PATIENTS WHERE id_patient = ? LIMIT 1");
-            $stmt_p->execute([(int)$id_patient]);
-            if (!$stmt_p->fetch()) {
-                if ($is_patient_connected && $patient_trouve && !empty($patient_trouve['id_patient'])) {
-                    $id_patient = (int)$patient_trouve['id_patient'];
-                } elseif ($is_patient_connected && !empty($_SESSION['id_patient'])) {
-                    $id_patient = (int)$_SESSION['id_patient'];
-                } else {
-                    $message = "Votre dossier patient n'est pas encore reconnu. Réessayez dans un instant ou déconnectez-vous puis reconnectez-vous.";
-                    $message_type = "danger";
-                }
-            }
-            
-            if ($message_type !== "danger" && $id_patient && $id_service) {
-                $stmt_m = $pdo->prepare("SELECT id_med FROM MEDECINS WHERE id_med = ? LIMIT 1");
-                $stmt_m->execute([(int)($id_med ?? 0)]);
-                if (!$stmt_m->fetch() || !$id_med) {
-                    $meds = getMedecinsByService((int)$id_service);
-                    $id_med = !empty($meds[0]['id_med']) ? (int)$meds[0]['id_med'] : null;
-                }
-                if (!$id_med) {
-                    $fb = getPremierMedecinApprouve();
-                    if ($fb && !empty($fb['id_med'])) {
-                        $id_med = (int)$fb['id_med'];
-                        if (!empty($fb['id_service'])) {
-                            $id_service = (int)$fb['id_service'];
-                        }
-                    } else {
-                        $message = "Aucun médecin disponible pour le moment. Réessayez plus tard.";
-                        $message_type = "danger";
-                    }
-                }
-            }
-            
-            if ($message_type !== "danger" && $id_patient && $id_med) {
-                $id_service_ok = $id_service;
-                if ($id_service) {
-                    $stmt_s = $pdo->prepare("SELECT id_service FROM SERVICES WHERE id_service = ? LIMIT 1");
-                    $stmt_s->execute([(int)$id_service]);
-                    $id_service_ok = $stmt_s->fetch() ? (int)$id_service : null;
-                }
-                // Convertir la date/heure au format MySQL (accepte jj/mm/aaaa, jj-mm-aaaa, aaaa-mm-jj + hh:mm)
-                $date_heure_mysql = null;
-                $date_parts = preg_split('/\s+/', trim($date_heure_rdv), 2);
-                if (count($date_parts) >= 2) {
-                    $date_part = trim($date_parts[0]);
-                    $time_part = trim($date_parts[1]);
-                    if (preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $time_part)) {
-                        $time_mysql = (substr_count($time_part, ':') >= 2) ? $time_part : ($time_part . ':00');
-                    } else {
-                        $time_mysql = $time_part . ':00';
-                    }
-                    // jj/mm/aaaa ou jj-mm-aaaa
-                    $by_slash = explode('/', $date_part);
-                    $by_dash = explode('-', $date_part);
-                    if (count($by_slash) == 3 && strlen($by_slash[2] ?? '') >= 4) {
-                        $date_heure_mysql = $by_slash[2] . '-' . $by_slash[1] . '-' . $by_slash[0] . ' ' . $time_mysql;
-                    } elseif (count($by_dash) == 3) {
-                        $a = $by_dash[0]; $b = $by_dash[1]; $c = $by_dash[2];
-                        if (strlen($a) == 4 && strlen($b) <= 2 && strlen($c) <= 2) {
-                            $date_heure_mysql = $a . '-' . str_pad($b, 2, '0', STR_PAD_LEFT) . '-' . str_pad($c, 2, '0', STR_PAD_LEFT) . ' ' . $time_mysql;
-                        } elseif (strlen($c) == 4 && strlen($a) <= 2 && strlen($b) <= 2) {
-                            $date_heure_mysql = $c . '-' . str_pad($b, 2, '0', STR_PAD_LEFT) . '-' . str_pad($a, 2, '0', STR_PAD_LEFT) . ' ' . $time_mysql;
-                        } else {
-                            $message = "Format de date invalide. Utilisez jj/mm/aaaa hh:mm (ex. 28/01/2026 14:30)";
-                            $message_type = "danger";
-                        }
-                    } else {
-                        $message = "Format de date invalide. Utilisez jj/mm/aaaa hh:mm (ex. 28/01/2026 14:30)";
-                        $message_type = "danger";
-                    }
-                    if ($date_heure_mysql === null && $message_type !== "danger") {
-                        $message = "Format de date invalide. Utilisez jj/mm/aaaa hh:mm (ex. 28/01/2026 14:30)";
-                        $message_type = "danger";
-                    }
-                } else {
-                    $message = "Indiquez la date et l'heure (ex. 28/01/2026 14:30)";
-                    $message_type = "danger";
-                }
-                
-                if ($message_type !== "danger" && $id_patient && $id_med && !empty($date_heure_mysql)) {
-                    try {
-                        if (creerRendezVous($date_heure_mysql, (int)$id_patient, (int)$id_med, $id_service_ok ? (int)$id_service_ok : null, $motif)) {
-                        if ($is_accueil) {
-                            $message = "✅ Le rendez-vous a été créé avec succès pour le patient ! Le médecin du service sera notifié.";
-                        } elseif ($is_medecin || $is_admin) {
-                            $message = "✅ Le rendez-vous a été créé avec succès !";
-                        } else {
-                            // Patient connecté ou visiteur : demande faite, en attente de confirmation médecin
-                            $message = "✅ Rendez-vous planifié avec succès ! Attendez qu'un médecin le confirme. Vous recevrez une notification dès la confirmation.";
-                        }
-                        $message_type = "success";
-                        // Réinitialiser
-                        if (!$is_patient_connected) {
-                            $patient_trouve = null;
-                            unset($_SESSION['patient_rdv']);
-                        }
-                        $_POST = [];
-                    } else {
-                        $message = "Une erreur est survenue lors de l'enregistrement. Veuillez réessayer.";
-                        $message_type = "danger";
-                    }
-                    } catch (PDOException $e) {
-                        error_log("Erreur RDV (PDO): " . $e->getMessage() . " | id_patient: $id_patient, id_med: $id_med");
-                        $message = "La réservation n'a pas pu être enregistrée. Réessayez ou choisissez un autre créneau.";
-                        $message_type = "danger";
-                    } catch (Exception $e) {
-                        error_log("Erreur RDV: " . $e->getMessage() . " | id_patient: " . ($id_patient ?? 'null'));
-                        $msg = $e->getMessage();
-                        // Afficher le message détaillé quand il est déjà rédigé pour l'utilisateur (patient, médecin, accueil, contrainte)
-                        if (!empty($msg) && strlen($msg) < 200 && (
-                            strpos($msg, 'Vérifiez') !== false || strpos($msg, "n'existe pas") !== false ||
-                            strpos($msg, 'contactez') !== false || strpos($msg, 'accueil') !== false ||
-                            strpos($msg, 'matricule') !== false || strpos($msg, 'médecin') !== false ||
-                            strpos($msg, 'service') !== false
-                        )) {
-                            $message = $msg;
-                        } else {
-                            $message = "La réservation n'a pas pu être enregistrée. Vérifiez le format de la date (ex. 28/01/2026 14:30), votre matricule et le service choisi, puis réessayez.";
-                        }
-                        $message_type = "danger";
-                    }
-                }
-            } else {
-                if ($message_type !== "danger") {
-                    if (!$id_patient) {
-                        $message = "Matricule introuvable. Vérifiez votre matricule ou reconnectez-vous.";
-                    } elseif (!$id_med) {
-                        $message = "Aucun médecin disponible pour le moment. Réessayez plus tard.";
-                    } elseif (!$id_service) {
-                        $message = "Veuillez choisir un service.";
-                    }
-                    $message_type = "danger";
-                }
-            }
-        } catch (Exception $e) {
-            $message = "Erreur : " . $e->getMessage();
-            $message_type = "danger";
         }
     }
 }
@@ -884,11 +581,11 @@ if ($db_status['connected'] && $db_status['tables_exist']) {
                 <div class="alert" style="padding: 18px 20px; margin-bottom: 24px; border-radius: 10px; background: #e8f4fc; border-left: 4px solid #4A90E2; color: #0c5460;">
                     <strong><i class="fa fa-calendar-check-o"></i> Comment prendre un rendez-vous</strong>
                     <ul style="margin: 10px 0 0 18px; padding-left: 8px; line-height: 1.7;">
-                        <li>Renseignez <strong>nom</strong> et <strong>matricule</strong> (ou connectez-vous pour les pré-remplir).</li>
+                        <li>Renseignez votre <strong>nom</strong> (et facultativement matricule, email).</li>
                         <li>Choisissez le <strong>service</strong> souhaité.</li>
                         <li>Indiquez la <strong>date et l’heure</strong> (ex. 28/01/2026 14:30).</li>
                         <li>Ajoutez éventuellement un <strong>motif</strong> de consultation.</li>
-                        <li>Cliquez sur <strong>« Réserver le rendez-vous »</strong>. Un médecin du service confirmera ensuite votre demande.</li>
+                        <li>Votre demande est enregistrée sans condition ; l'accueil la transmettra au service, puis un médecin la confirmera.</li>
                     </ul>
                     <?php if (!$is_patient_connected): ?>
                     <p style="margin: 12px 0 0 0; font-size: 14px;">
@@ -919,9 +616,9 @@ if ($db_status['connected'] && $db_status['tables_exist']) {
                                 <?php endif; ?>
                             </div>
                         <?php else: ?>
-                            <div class="alert alert-warning" style="padding: 15px; margin-bottom: 20px; border-radius: 8px; background: #fff3cd; border: 1px solid #ffc107; color: #856404;">
-                                <strong><i class="fa fa-exclamation-triangle"></i> Attention :</strong> 
-                                Vos informations patient ne sont pas complètes. Veuillez vérifier votre matricule ou contactez l'accueil si le problème persiste.
+                            <div class="alert alert-info" style="padding: 15px; margin-bottom: 20px; border-radius: 8px; background: #e7f3ff; border: 1px solid #4A90E2; color: #004085;">
+                                <strong><i class="fa fa-info-circle"></i> Vous pouvez faire votre demande :</strong> 
+                                Renseignez le service, la date et l'heure. Votre demande sera enregistrée sans condition puis transmise au service.
                             </div>
                         <?php endif; ?>
                     <?php endif; ?>
@@ -957,7 +654,7 @@ if ($db_status['connected'] && $db_status['tables_exist']) {
                     </div>
                     
                     <div class="form-group">
-                        <label><i class="fa fa-id-card"></i> Matricule du Patient <span class="text-danger">*</span></label>
+                        <label><i class="fa fa-id-card"></i> Matricule du Patient</label>
                         <?php 
                         $matricule_value = '';
                         if ($patient_trouve && isset($patient_trouve['Matricule_patient'])) {
@@ -971,11 +668,27 @@ if ($db_status['connected'] && $db_status['tables_exist']) {
                                id="matricule_patient" 
                                class="form-control" 
                                value="<?php echo htmlspecialchars($matricule_value); ?>"
-                               placeholder="Matricule du patient"
-                               required
+                               placeholder="Si vous en avez un"
                                style="font-weight: 600; color: #002939; font-size: 16px; padding: 12px;">
                         <small class="text-muted">
-                            <i class="fa fa-info-circle"></i> Le matricule permet d'identifier de manière unique le patient dans le système.
+                            <i class="fa fa-info-circle"></i> Optionnel. Sans matricule, votre demande sera quand même enregistrée et traitée.
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fa fa-envelope"></i> Email</label>
+                        <?php 
+                        $email_value = $is_patient_connected && !empty($user_info['email']) ? $user_info['email'] : htmlspecialchars($_POST['email'] ?? '');
+                        ?>
+                        <input type="email" 
+                               name="email" 
+                               id="email_demandeur" 
+                               class="form-control" 
+                               value="<?php echo htmlspecialchars($email_value); ?>"
+                               placeholder="votre@email.fr"
+                               style="font-size: 16px; padding: 12px;">
+                        <small class="text-muted">
+                            <i class="fa fa-info-circle"></i> Utile pour vous contacter ; optionnel pour enregistrer la demande.
                         </small>
                     </div>
                     
@@ -1148,32 +861,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Validation à la soumission du formulaire
+    // À la soumission : remplir id_med si besoin, laisser le serveur valider la date (formats multiples acceptés)
     const form = document.getElementById('form-rdv');
     if (form) {
-        form.addEventListener('submit', function(e) {
-            const value = dateInput.value.trim();
-            const pattern = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
-            
-            if (!pattern.test(value)) {
-                e.preventDefault();
-                dateInput.classList.add('is-invalid');
-                dateInput.focus();
-                
-                // Afficher un message d'erreur personnalisé
-                let errorMsg = dateInput.parentElement.querySelector('.invalid-feedback');
-                if (!errorMsg) {
-                    errorMsg = document.createElement('div');
-                    errorMsg.className = 'invalid-feedback';
-                    dateInput.parentElement.appendChild(errorMsg);
-                }
-                errorMsg.textContent = 'Veuillez respecter le format : jj/mm/aaaa hh:mm (ex: 25/01/2026 14:30)';
-                return false;
-            } else {
-                dateInput.classList.remove('is-invalid');
-            }
-            
-            // Remplir id_med avant envoi si vide : premier médecin du service sélectionné
+        form.addEventListener('submit', function() {
+            dateInput.classList.remove('is-invalid');
             var idMedEl = document.getElementById('id_med');
             var idServiceEl = document.getElementById('id_service');
             if (idMedEl && idServiceEl && typeof serviceToFirstMed === 'object') {

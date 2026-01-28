@@ -154,6 +154,9 @@ if ($num_carnet) {
 						<a href="creer-carnet.php" class="btn-retour">
 							<i class="fa fa-arrow-left"></i> Retour à la création de carnet
 						</a>
+						<a href="historique-carnets.php" class="btn-retour" style="background:#4A90E2;">
+							<i class="fa fa-book"></i> Historique des carnets
+						</a>
 						<a href="index.php" class="btn-retour" style="background:#5a6268;">
 							<i class="fa fa-dashboard"></i> Tableau de bord
 						</a>

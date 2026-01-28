@@ -11,8 +11,14 @@ $id_med = $user_info['id_med'];
 $specialisation = $user_info['specialisation'] ?? '';
 
 $mes_rdv = [];
+$rdv_planifies = [];
+$rdv_confirmes = [];
 $message = '';
 $message_type = '';
+if (!empty($_GET['msg']) && $_GET['msg'] === 'creation_rdv_accueil') {
+    $message = "La création des rendez-vous est assurée par l'accueil. Vous pouvez consulter et valider vos rendez-vous depuis cette page.";
+    $message_type = 'info';
+}
 
 if ($id_med) {
     try {
@@ -35,6 +41,66 @@ if ($id_med) {
         $mes_rdv = getRendezVousByMedecin($id_med, $specialisation);
         if ($mes_rdv === false) {
             $mes_rdv = [];
+        }
+
+        // Séparer les rendez-vous selon leur statut
+        // On est tolérant sur l'écriture du statut (majuscules, accents, espaces...)
+        foreach ($mes_rdv as $rdv) {
+            $statut_brut = isset($rdv['Statut']) ? $rdv['Statut'] : '';
+            $statut = strtolower(trim($statut_brut));
+
+            // RDV à confirmer
+            if (in_array($statut, ['planifié', 'planifie'])) {
+                $rdv_planifies[] = $rdv;
+                continue;
+            }
+
+            // RDV annulés (on ne les met pas dans les confirmés)
+            if (in_array($statut, ['annulé', 'annule'])) {
+                continue;
+            }
+
+            // Tout le reste est considéré comme "confirmé / validé"
+            if ($statut !== '') {
+                $rdv_confirmes[] = $rdv;
+            }
+        }
+
+        // Compléter les rendez-vous confirmés avec les DEMANDES marquées "traitee" pour ce service
+        // Cela permet d'aligner la liste avec le compteur "Confirmés" du tableau de bord.
+        if (!empty($specialisation) && function_exists('getIdServiceByNom')) {
+            $id_service_dashboard = getIdServiceByNom($specialisation);
+            if ($id_service_dashboard) {
+                try {
+                    $pdo = bdd();
+                    $sql_dem = "SELECT d.*, s.Nom_service 
+                                FROM DEMANDE_RENDEZ_VOUS d
+                                LEFT JOIN SERVICES s ON d.id_service = s.id_service
+                                LEFT JOIN RENDEZ_VOUS r 
+                                    ON r.Date_rdv = d.Date_rdv_souhaitee
+                                   AND (r.id_service = d.id_service OR (r.id_service IS NULL AND d.id_service IS NULL))
+                                WHERE d.id_service = ?
+                                  AND d.statut = 'traitee'
+                                  AND r.id_rdv IS NULL
+                                ORDER BY d.Date_rdv_souhaitee DESC";
+                    $stmt_dem = $pdo->prepare($sql_dem);
+                    $stmt_dem->execute([$id_service_dashboard]);
+                    $demandes_traitees = $stmt_dem->fetchAll(PDO::FETCH_ASSOC);
+
+                    foreach ($demandes_traitees as $d) {
+                        $rdv_confirmes[] = [
+                            'Nom_patient'   => $d['nom_demandeur'] ?? '',
+                            'Prénom_patient'=> '',
+                            'Date_rdv'      => $d['Date_rdv_souhaitee'] ?? null,
+                            'Nom_service'   => $d['Nom_service'] ?? ($specialisation ?: 'Service'),
+                            'Motif'         => $d['motif'] ?? '',
+                            'Statut'        => 'confirmé'
+                        ];
+                    }
+                } catch (Exception $e) {
+                    error_log('mes-rendez-vous (demandes traitee): ' . $e->getMessage());
+                }
+            }
         }
     } catch (Exception $e) {
         error_log("Erreur mes-rendez-vous: " . $e->getMessage());
@@ -146,7 +212,8 @@ if ($id_med) {
 					
 					<div class="info-box">
 						<strong>Service :</strong> <?php echo htmlspecialchars($specialisation); ?> | 
-						<strong>Total :</strong> <?php echo count($mes_rdv); ?> rendez-vous
+						<strong>Total :</strong> <?php echo count($mes_rdv); ?> rendez-vous 
+                        (<?php echo count($rdv_planifies); ?> à confirmer, <?php echo count($rdv_confirmes); ?> confirmés)
 					</div>
 					
 					<?php if ($message): ?>
@@ -162,7 +229,12 @@ if ($id_med) {
 							<p>Vous n'avez pas encore de rendez-vous.</p>
 						</div>
 					<?php else: ?>
-						<?php foreach ($mes_rdv as $rdv): ?>
+                        <!-- Rendez-vous à confirmer -->
+                        <h3 style="margin-top: 20px; margin-bottom: 10px;">Rendez-vous à confirmer</h3>
+                        <?php if (empty($rdv_planifies)): ?>
+                            <p style="color: #666;">Aucun rendez-vous en attente de confirmation.</p>
+                        <?php else: ?>
+						    <?php foreach ($rdv_planifies as $rdv): ?>
 							<div class="rdv-card">
 								<div class="rdv-header">
 									<div class="patient-name">
@@ -208,7 +280,57 @@ if ($id_med) {
 									</button>
 								<?php endif; ?>
 							</div>
-						<?php endforeach; ?>
+						    <?php endforeach; ?>
+                        <?php endif; ?>
+
+                        <!-- Rendez-vous déjà confirmés -->
+                        <h3 style="margin-top: 30px; margin-bottom: 10px;">Rendez-vous confirmés</h3>
+                        <?php if (empty($rdv_confirmes)): ?>
+                            <p style="color: #666;">Vous n'avez pas encore de rendez-vous confirmés.</p>
+                        <?php else: ?>
+                            <?php foreach ($rdv_confirmes as $rdv): ?>
+                            <div class="rdv-card">
+								<div class="rdv-header">
+									<div class="patient-name">
+										<i class="fa fa-user"></i> <?php echo htmlspecialchars(($rdv['Nom_patient'] ?? '') . ' ' . ($rdv['Prénom_patient'] ?? '')); ?>
+									</div>
+									<?php if (isset($rdv['Statut'])): ?>
+										<span class="statut-badge statut-<?php echo strtolower($rdv['Statut']); ?>">
+											<?php echo htmlspecialchars($rdv['Statut']); ?>
+										</span>
+									<?php endif; ?>
+								</div>
+								<div class="rdv-details">
+									<?php if (isset($rdv['Date_rdv'])): ?>
+										<div class="detail-item">
+											<strong><i class="fa fa-calendar"></i> Date :</strong><br>
+											<?php echo date('d/m/Y', strtotime($rdv['Date_rdv'])); ?>
+										</div>
+										<div class="detail-item">
+											<strong><i class="fa fa-clock-o"></i> Heure :</strong><br>
+											<?php echo date('H:i', strtotime($rdv['Date_rdv'])); ?>
+										</div>
+									<?php endif; ?>
+									<div class="detail-item">
+										<strong><i class="fa fa-stethoscope"></i> Service :</strong><br>
+										<?php echo htmlspecialchars($rdv['Nom_service'] ?? 'N/A'); ?>
+									</div>
+									<?php if (isset($rdv['Nom_med']) && isset($rdv['Prénom_med'])): ?>
+										<div class="detail-item">
+											<strong><i class="fa fa-user-md"></i> Médecin :</strong><br>
+											Dr. <?php echo htmlspecialchars(($rdv['Prénom_med'] ?? '') . ' ' . ($rdv['Nom_med'] ?? '')); ?>
+										</div>
+									<?php endif; ?>
+									<?php if (isset($rdv['Motif']) && $rdv['Motif']): ?>
+										<div class="detail-item">
+											<strong><i class="fa fa-file-text"></i> Motif :</strong><br>
+											<?php echo htmlspecialchars($rdv['Motif']); ?>
+										</div>
+									<?php endif; ?>
+								</div>
+							</div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
 					<?php endif; ?>
 				</div>
 			</div>

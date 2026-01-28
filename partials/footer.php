@@ -4,7 +4,24 @@
                 <div class="row">
                     <div class="col-lg-3 col-md-6 col-sm-6 footer-col-4">
                         <div class="widget widget_about">
-                            <div class="logo-footer"><img src="image/1.jpeg" alt="Logo MediCo. - Centre Médical"></div>
+                            <div class="logo-footer">
+                                <?php
+                                // Utiliser le même mécanisme de base_path que dans l'entête
+                                if (!isset($base_path)) {
+                                    $base_path = '';
+                                }
+                                // Logo principal du site dans le dossier images
+                                $footer_logo = $base_path . 'images/logo.png';
+                                // Si le logo principal n'existe pas, utiliser un logo de secours
+                                if (!file_exists(__DIR__ . '/../images/logo.png')) {
+                                    $footer_logo = $base_path . 'images/footer-logo.png';
+                                }
+                                ?>
+                                <img src="<?php echo htmlspecialchars($footer_logo); ?>" 
+                                     alt="Logo MediCo. - Centre Médical"
+                                     style="max-width: 180px; height: auto;"
+                                     onerror="this.onerror=null; this.src='<?php echo $base_path; ?>images/footer-logo.png';">
+                            </div>
                             <p class="m-t30 m-b20"><strong>MediCo.</strong> est un centre médical d'excellence offrant des soins de santé complets avec une équipe de professionnels qualifiés. Nous nous engageons à fournir des soins de qualité dans un environnement moderne et accueillant, en mettant l'accent sur le bien-être de chaque patient.</p>
                             <ul class="dez-social-icon border dez-social-icon-lg">
                                 <li><a href="javascript:void(0);" class="fa fa-facebook fb-btn"></a></li>

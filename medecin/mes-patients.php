@@ -19,6 +19,60 @@ if ($id_med) {
         if ($specialisation) {
             $id_service = getIdServiceByNom($specialisation);
             $mes_patients = $id_service ? getPatientsDuService($id_service) : [];
+
+            // OPTION B : compléter la liste avec les demandes « traitées » sans RDV réel
+            if ($id_service) {
+                try {
+                    $pdo = bdd();
+                    // Indexer les patients déjà présents pour éviter les doublons (email + matricule normalisé)
+                    $patients_keys = [];
+                    foreach ($mes_patients as $p) {
+                        $email_p = strtolower(trim($p['Email_patient'] ?? ''));
+                        $mat_p = preg_replace('/\s+/', '', strtoupper($p['Matricule_patient'] ?? ''));
+                        $key = $email_p . '|' . $mat_p;
+                        if ($key !== '|') {
+                            $patients_keys[$key] = true;
+                        }
+                    }
+
+                    $sql_dem = "SELECT d.*
+                                FROM DEMANDE_RENDEZ_VOUS d
+                                LEFT JOIN RENDEZ_VOUS r 
+                                    ON r.Date_rdv = d.Date_rdv_souhaitee
+                                   AND (r.id_service = d.id_service OR (r.id_service IS NULL AND d.id_service IS NULL))
+                                WHERE d.id_service = ?
+                                  AND d.statut = 'traitee'
+                                  AND r.id_rdv IS NULL";
+                    $stmt_dem = $pdo->prepare($sql_dem);
+                    $stmt_dem->execute([$id_service]);
+                    $demandes_traitees = $stmt_dem->fetchAll(PDO::FETCH_ASSOC);
+
+                    foreach ($demandes_traitees as $d) {
+                        $email_d = strtolower(trim($d['email_demandeur'] ?? ''));
+                        $mat_d = preg_replace('/\s+/', '', strtoupper($d['matricule_demandeur'] ?? ''));
+                        $key_d = $email_d . '|' . $mat_d;
+
+                        // Si le patient n'est pas déjà dans la liste, on l'ajoute comme « patient virtuel »
+                        if ($key_d !== '|' && !isset($patients_keys[$key_d])) {
+                            $patients_keys[$key_d] = true;
+                            $mes_patients[] = [
+                                // pas encore de vrai dossier patient
+                                'id_patient'        => null,
+                                'Nom_patient'       => $d['nom_demandeur'] ?? '',
+                                'Prénom_patient'    => '',
+                                'Matricule_patient' => $d['matricule_demandeur'] ?? '',
+                                'Email_patient'     => $d['email_demandeur'] ?? '',
+                                // champ facultatif : dépend du schéma de DEMANDE_RENDEZ_VOUS
+                                'Tel_patient'       => $d['telephone_demandeur'] ?? ($d['tel_demandeur'] ?? null),
+                                'Photo_profil'      => null,
+                            ];
+                        }
+                    }
+                } catch (Exception $e_dem) {
+                    // On ne bloque pas la page si la récupération des demandes échoue
+                    error_log("mes-patients (demandes traitee sans RDV): " . $e_dem->getMessage());
+                }
+            }
         } else {
             $message = "Votre spécialisation (service) n'est pas définie. Veuillez contacter l'administrateur.";
             $message_type = "warning";

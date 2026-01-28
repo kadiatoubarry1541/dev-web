@@ -14,6 +14,7 @@ $user_info = getUserInfo();
 $message = '';
 $message_type = '';
 $success = false;
+$recu_data = null;
 
 // Récupérer les patients et services
 $patients = [];
@@ -46,6 +47,15 @@ try {
         error_log("Erreur vérification colonne id_service dans PAIEMENT: " . $e->getMessage());
     }
     
+    // Tenter de simplifier la contrainte sur id_patient pour éviter les erreurs de clé étrangère
+    try {
+        // Essayer de supprimer une ancienne contrainte étrangère qui pointe vers une ancienne table patient
+        $pdo->exec("ALTER TABLE PAIEMENT DROP FOREIGN KEY paiement_ibfk_1");
+    } catch (Exception $e) {
+        // Si la contrainte n'existe pas ou ne peut pas être supprimée, on ignore
+        error_log("Info: impossible de supprimer la contrainte paiement_ibfk_1 (peut être déjà supprimée) : " . $e->getMessage());
+    }
+    
     $patients = getAllPatients();
     $services = getAllServices();
 } catch (Exception $e) {
@@ -63,202 +73,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['creer_paiement'])) {
     $methode = $_POST['methode'] ?? 'espèces';
     $statut = $_POST['statut'] ?? 'payé';
     
-    // Si Orange Money est sélectionné, rediriger vers le traitement Orange Money
-    if ($methode === 'orange_money') {
-        $customer_phone = trim($_POST['customer_phone'] ?? '');
-        
-        // Validation complète pour Orange Money
-        if (empty($montant) || $montant <= 0 || $montant < 0.01) {
-            $message = "Le montant doit être supérieur à 0.00 GNF.";
-            $message_type = "danger";
-        } elseif (empty($id_patient)) {
-            $message = "Veuillez sélectionner un patient.";
-            $message_type = "danger";
-        } elseif (empty($id_service)) {
-            $message = "Veuillez sélectionner un service.";
-            $message_type = "danger";
-        } elseif (empty($customer_phone)) {
-            $message = "Veuillez entrer le numéro de téléphone Orange Money du patient.";
-            $message_type = "danger";
-        } else {
-            // Créer un formulaire caché et le soumettre automatiquement vers orange_process.php
-            // On va utiliser une session pour passer les données
-            $_SESSION['orange_payment_data'] = [
-                'montant' => $montant,
-                'id_patient' => $id_patient,
-                'id_service' => $id_service,
-                'customer_phone' => $customer_phone,
-                'date_paiement' => $date_paiement
-            ];
-            header('Location: ../payment/orange_process.php');
-            exit();
-        }
+    // Validation du paiement
+    if (empty($montant) || $montant <= 0 || $montant < 0.01) {
+        $message = "Le montant doit être supérieur à 0.00 GNF. Un paiement avec un montant de 0.00 GNF ne peut pas être enregistré.";
+        $message_type = "danger";
+    } elseif ($montant == 0 && $statut === 'payé') {
+        $message = "Un paiement avec un montant de 0.00 GNF ne peut pas avoir le statut 'Payé'. Veuillez modifier le montant (minimum 0.01 GNF) ou changer le statut à 'En attente' ou 'Annulé'.";
+        $message_type = "danger";
+    } elseif (empty($id_patient)) {
+        $message = "Veuillez sélectionner un patient.";
+        $message_type = "danger";
+    } elseif (empty($id_service)) {
+        $message = "Veuillez sélectionner un service.";
+        $message_type = "danger";
     } else {
-        // Validation stricte pour les autres méthodes
-        if (empty($montant) || $montant <= 0 || $montant < 0.01) {
-            $message = "Le montant doit être supérieur à 0.00 GNF. Un paiement avec un montant de 0.00 GNF ne peut pas être enregistré.";
-            $message_type = "danger";
-        } elseif ($montant == 0 && $statut === 'payé') {
-            $message = "Un paiement avec un montant de 0.00 GNF ne peut pas avoir le statut 'Payé'. Veuillez modifier le montant (minimum 0.01 GNF) ou changer le statut à 'En attente' ou 'Annulé'.";
-            $message_type = "danger";
-        } elseif (empty($id_patient)) {
-            $message = "Veuillez sélectionner un patient.";
-            $message_type = "danger";
-        } elseif (empty($id_service)) {
-            $message = "Veuillez sélectionner un service.";
-            $message_type = "danger";
-        } else {
-        try {
-            // Générer un numéro de facture si nécessaire
-            $id_facture = null;
-            if ($statut === 'payé') {
-                $id_facture = genererNumeroFacture();
+        // Ici on ne touche plus à la base de données.
+        // On utilise uniquement les informations du formulaire
+        // pour générer un reçu simple à imprimer.
+
+        // Récupérer les infos du patient sélectionné
+        $patient_info = null;
+        foreach ($patients as $p) {
+            if ($p['id_patient'] == $id_patient) {
+                $patient_info = $p;
+                break;
             }
-            
-            // Créer le paiement avec id_service
-            $pdo = bdd();
-            
-            // Vérifier quelles colonnes existent
-            $check_id_service = $pdo->query("SHOW COLUMNS FROM PAIEMENT LIKE 'id_service'");
-            $has_id_service = $check_id_service->rowCount() > 0;
-            
-            $check_methode = $pdo->query("SHOW COLUMNS FROM PAIEMENT LIKE 'Méthode_paiement'");
-            $has_methode = $check_methode->rowCount() > 0;
-            
-            // Vérifier si la colonne id_facture existe
-            $check_id_facture = $pdo->query("SHOW COLUMNS FROM PAIEMENT LIKE 'id_facture'");
-            $has_id_facture = $check_id_facture->rowCount() > 0;
-            
-            // Si la colonne id_facture n'existe pas, essayer de l'ajouter
-            if (!$has_id_facture) {
-                try {
-                    $pdo->exec("ALTER TABLE PAIEMENT ADD COLUMN id_facture VARCHAR(50) UNIQUE NULL AFTER Méthode_paiement");
-                    $has_id_facture = true;
-                } catch (Exception $e) {
-                    error_log("Erreur ajout colonne id_facture: " . $e->getMessage());
-                    // Continuer sans id_facture si on ne peut pas l'ajouter
-                }
-            }
-            
-            // Si la colonne Méthode_paiement n'existe pas, essayer avec un nom sans accent
-            if (!$has_methode) {
-                $check_methode_alt = $pdo->query("SHOW COLUMNS FROM PAIEMENT LIKE 'methode_paiement'");
-                $has_methode_alt = $check_methode_alt->rowCount() > 0;
-                
-                if ($has_methode_alt) {
-                    // Utiliser methode_paiement sans accent
-                    if ($has_id_service) {
-                        if ($has_id_facture) {
-                            $sql = "INSERT INTO PAIEMENT (Montant, Date_paiement, id_patient, id_consultation, id_service, methode_paiement, id_facture, Statut) 
-                                    VALUES (?, ?, ?, NULL, ?, ?, ?, ?)";
-                            $stmt = $pdo->prepare($sql);
-                            $result = $stmt->execute([$montant, $date_paiement, $id_patient, $id_service, $methode, $id_facture, $statut]);
-                        } else {
-                            $sql = "INSERT INTO PAIEMENT (Montant, Date_paiement, id_patient, id_consultation, id_service, methode_paiement, Statut) 
-                                    VALUES (?, ?, ?, NULL, ?, ?, ?)";
-                            $stmt = $pdo->prepare($sql);
-                            $result = $stmt->execute([$montant, $date_paiement, $id_patient, $id_service, $methode, $statut]);
-                        }
-                    } else {
-                        if ($has_id_facture) {
-                            $sql = "INSERT INTO PAIEMENT (Montant, Date_paiement, id_patient, id_consultation, methode_paiement, id_facture, Statut) 
-                                    VALUES (?, ?, ?, NULL, ?, ?, ?)";
-                            $stmt = $pdo->prepare($sql);
-                            $result = $stmt->execute([$montant, $date_paiement, $id_patient, $methode, $id_facture, $statut]);
-                        } else {
-                            $sql = "INSERT INTO PAIEMENT (Montant, Date_paiement, id_patient, id_consultation, methode_paiement, Statut) 
-                                    VALUES (?, ?, ?, NULL, ?, ?)";
-                            $stmt = $pdo->prepare($sql);
-                            $result = $stmt->execute([$montant, $date_paiement, $id_patient, $methode, $statut]);
-                        }
-                    }
-                } else {
-                    // La colonne n'existe pas du tout, l'ajouter
-                    try {
-                        $pdo->exec("ALTER TABLE PAIEMENT ADD COLUMN Méthode_paiement ENUM('espèces', 'carte', 'chèque', 'virement') DEFAULT 'espèces'");
-                        $has_methode = true;
-                    } catch (Exception $e) {
-                        error_log("Erreur ajout colonne Méthode_paiement: " . $e->getMessage());
-                        throw new Exception("La colonne Méthode_paiement n'existe pas et n'a pas pu être créée. Veuillez contacter l'administrateur.");
-                    }
-                }
-            }
-            
-            // Si on a la colonne Méthode_paiement (avec accent)
-            if ($has_methode && !isset($result)) {
-                if ($has_id_service) {
-                    if ($has_id_facture) {
-                        $sql = "INSERT INTO PAIEMENT (Montant, Date_paiement, id_patient, id_consultation, id_service, Méthode_paiement, id_facture, Statut) 
-                                VALUES (?, ?, ?, NULL, ?, ?, ?, ?)";
-                        $stmt = $pdo->prepare($sql);
-                        $result = $stmt->execute([$montant, $date_paiement, $id_patient, $id_service, $methode, $id_facture, $statut]);
-                    } else {
-                        $sql = "INSERT INTO PAIEMENT (Montant, Date_paiement, id_patient, id_consultation, id_service, Méthode_paiement, Statut) 
-                                VALUES (?, ?, ?, NULL, ?, ?, ?)";
-                        $stmt = $pdo->prepare($sql);
-                        $result = $stmt->execute([$montant, $date_paiement, $id_patient, $id_service, $methode, $statut]);
-                    }
-                } else {
-                    if ($has_id_facture) {
-                        $sql = "INSERT INTO PAIEMENT (Montant, Date_paiement, id_patient, id_consultation, Méthode_paiement, id_facture, Statut) 
-                                VALUES (?, ?, ?, NULL, ?, ?, ?)";
-                        $stmt = $pdo->prepare($sql);
-                        $result = $stmt->execute([$montant, $date_paiement, $id_patient, $methode, $id_facture, $statut]);
-                    } else {
-                        $sql = "INSERT INTO PAIEMENT (Montant, Date_paiement, id_patient, id_consultation, Méthode_paiement, Statut) 
-                                VALUES (?, ?, ?, NULL, ?, ?)";
-                        $stmt = $pdo->prepare($sql);
-                        $result = $stmt->execute([$montant, $date_paiement, $id_patient, $methode, $statut]);
-                    }
-                }
-            }
-            
-            if ($result) {
-                $id_paiement_creé = $pdo->lastInsertId();
-                
-                // Si le paiement est payé, générer automatiquement le reçu
-                if ($statut === 'payé') {
-                    try {
-                        $chemin_reçu = genererReçu($id_paiement_creé);
-                        $message = "Le paiement a été créé avec succès ! Le reçu a été généré et envoyé au patient.";
-                        if ($id_facture) {
-                            $message .= " Numéro de facture : <strong>" . htmlspecialchars($id_facture) . "</strong>";
-                        }
-                    } catch (Exception $e) {
-                        error_log("Erreur génération reçu: " . $e->getMessage());
-                        $message = "Le paiement a été créé avec succès !";
-                        if ($id_facture) {
-                            $message .= " Numéro de facture : <strong>" . htmlspecialchars($id_facture) . "</strong>";
-                        }
-                        $message .= " <small style='color: orange;'>(Note: Le reçu n'a pas pu être généré automatiquement. Vous pouvez le créer manuellement depuis la liste des paiements)</small>";
-                    }
-                } else {
-                    $message = "Le paiement a été créé avec succès !";
-                    if ($id_facture) {
-                        $message .= " Numéro de facture : <strong>" . htmlspecialchars($id_facture) . "</strong>";
-                    }
-                    $message .= " <small style='color: #666;'>(Le reçu sera généré automatiquement lorsque le paiement sera marqué comme 'Payé')</small>";
-                }
-                
-                $message_type = "success";
-                $success = true;
-                
-                // Réinitialiser les données
-                $_POST = [];
-                
-                // Recharger les services
-                $services = getAllServices();
-            } else {
-                throw new Exception("Erreur lors de la création du paiement.");
-            }
-        } catch (PDOException $e) {
-            error_log("Erreur création paiement: " . $e->getMessage());
-            $message = "Erreur lors de la création du paiement : " . $e->getMessage();
-            $message_type = "danger";
-        } catch (Exception $e) {
-            $message = $e->getMessage();
-            $message_type = "danger";
         }
+
+        // Récupérer les infos du service sélectionné
+        $service_info = null;
+        foreach ($services as $s) {
+            if ($s['id_service'] == $id_service) {
+                $service_info = $s;
+                break;
+            }
+        }
+
+        $recu_data = [
+            'patient_nom' => $patient_info ? ($patient_info['Nom_patient'] . ' ' . $patient_info['Prénom_patient']) : '',
+            'patient_matricule' => $patient_info['Matricule_patient'] ?? '',
+            'service_nom' => $service_info['Nom_service'] ?? '',
+            'service_tarif' => $service_info['Tarif'] ?? $montant,
+            'montant' => $montant,
+            'date_paiement' => $date_paiement,
+            'methode' => $methode,
+            'statut' => $statut,
+        ];
+
+        $message = "Le reçu a été généré. Vous pouvez l'imprimer ci-dessous et le remettre au patient.";
+        $message_type = "success";
+        $success = true;
     }
 }
 ?>
@@ -494,12 +358,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['creer_paiement'])) {
 					<div class="form-row">
 						<div class="form-group">
 							<label>Méthode de paiement <span class="required">*</span></label>
-							<select name="methode" id="methode_paiement" required>
-								<option value="espèces" <?php echo (isset($_POST['methode']) && $_POST['methode'] == 'espèces') ? 'selected' : 'selected'; ?>>Espèces</option>
+                            <select name="methode" id="methode_paiement" required>
+                                <option value="espèces" <?php echo (isset($_POST['methode']) && $_POST['methode'] == 'espèces') ? 'selected' : 'selected'; ?>>Espèces</option>
 								<option value="carte" <?php echo (isset($_POST['methode']) && $_POST['methode'] == 'carte') ? 'selected' : ''; ?>>Carte bancaire</option>
 								<option value="chèque" <?php echo (isset($_POST['methode']) && $_POST['methode'] == 'chèque') ? 'selected' : ''; ?>>Chèque</option>
 								<option value="virement" <?php echo (isset($_POST['methode']) && $_POST['methode'] == 'virement') ? 'selected' : ''; ?>>Virement</option>
-								<option value="orange_money" <?php echo (isset($_POST['methode']) && $_POST['methode'] == 'orange_money') ? 'selected' : ''; ?>>Orange Money</option>
 							</select>
 						</div>
 						
@@ -513,15 +376,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['creer_paiement'])) {
 						</div>
 					</div>
 					
-					<!-- Champ pour le numéro de téléphone Orange Money (affiché uniquement si Orange Money est sélectionné) -->
-					<div class="form-group" id="orange_phone_group" style="display: none;">
-						<label>Numéro de téléphone Orange Money <span class="required">*</span></label>
-						<input type="tel" name="customer_phone" id="customer_phone" 
-							   placeholder="Ex: +224 612 34 56 78" 
-							   value="<?php echo htmlspecialchars($_POST['customer_phone'] ?? ''); ?>">
-						<small style="color: #666;">Entrez le numéro de téléphone Orange Money du patient (format: +224 XX XX XX XX)</small>
-					</div>
-					
 					<div style="margin-top: 30px; text-align: center;">
 						<button type="submit" name="creer_paiement" class="btn-submit">
 							<i class="fa fa-save"></i> Enregistrer le Paiement
@@ -532,12 +386,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['creer_paiement'])) {
 					</div>
 				</form>
 				<?php else: ?>
-					<div style="text-align: center; padding: 40px 0;">
-						<i class="fa fa-check-circle" style="font-size: 64px; color: #28a745; margin-bottom: 20px;"></i>
-						<h2 style="color: #28a745; margin-bottom: 20px;">Paiement créé avec succès !</h2>
-						<a href="creer-paiement.php" class="btn-submit">
-							<i class="fa fa-plus"></i> Créer un autre paiement
-						</a>
+					<div style="padding: 20px 0;">
+						<div style="text-align: center; margin-bottom: 30px;">
+							<i class="fa fa-check-circle" style="font-size: 64px; color: #28a745; margin-bottom: 20px;"></i>
+							<h2 style="color: #28a745; margin-bottom: 10px;">Reçu prêt à être imprimé</h2>
+							<p style="color: #555;">Utilisez le bouton ci-dessous pour imprimer le reçu et le remettre au patient.</p>
+						</div>
+
+						<div id="recu-print" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 30px; max-width: 800px; margin: 0 auto;">
+							<h3 style="text-align: center; margin-bottom: 20px;">Reçu de Paiement</h3>
+							<p><strong>Date :</strong> <?php echo isset($recu_data['date_paiement']) ? htmlspecialchars(date('d/m/Y H:i', strtotime($recu_data['date_paiement']))) : ''; ?></p>
+							<hr style="margin: 15px 0;">
+							<p><strong>Patient :</strong> <?php echo htmlspecialchars($recu_data['patient_nom'] ?? ''); ?></p>
+							<?php if (!empty($recu_data['patient_matricule'])): ?>
+								<p><strong>Matricule :</strong> <?php echo htmlspecialchars($recu_data['patient_matricule']); ?></p>
+							<?php endif; ?>
+							<hr style="margin: 15px 0;">
+							<p><strong>Service :</strong> <?php echo htmlspecialchars($recu_data['service_nom'] ?? ''); ?></p>
+							<p><strong>Montant :</strong> <?php echo number_format($recu_data['montant'] ?? 0, 0, ',', ' '); ?> GNF</p>
+							<p><strong>Méthode de paiement :</strong> <?php echo htmlspecialchars($recu_data['methode'] ?? ''); ?></p>
+							<p><strong>Statut :</strong> <?php echo htmlspecialchars(ucfirst($recu_data['statut'] ?? '')); ?></p>
+							<hr style="margin: 20px 0;">
+							<p style="margin-top: 40px;"><strong>Signature du caissier :</strong> _____________________________</p>
+						</div>
+
+						<div style="text-align: center; margin-top: 30px;">
+							<button type="button" class="btn-submit" onclick="imprimerRecu()">
+								<i class="fa fa-print"></i> Imprimer le reçu
+							</button>
+							<a href="creer-paiement.php" class="btn-submit" style="background: #6c757d; text-decoration: none; display: inline-block; margin-left: 10px;">
+								<i class="fa fa-plus"></i> Créer un autre paiement
+							</a>
+						</div>
 					</div>
 				<?php endif; ?>
 			</div>
@@ -550,7 +430,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['creer_paiement'])) {
 <script src="../assets/js/jquery.min.js"></script>
 <script>
 // Script pour mettre à jour automatiquement le montant selon le service sélectionné
-document.addEventListener('DOMContentLoaded', function() {
+	document.addEventListener('DOMContentLoaded', function() {
 	var serviceSelect = document.getElementById('id_service');
 	var montantInput = document.querySelector('input[name="montant"]');
 	var statutSelect = document.querySelector('select[name="statut"]');
@@ -621,56 +501,20 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		});
 	}
-	
-	// Gérer l'affichage du champ téléphone Orange Money
-	var methodeSelect = document.getElementById('methode_paiement');
-	var orangePhoneGroup = document.getElementById('orange_phone_group');
-	var customerPhoneInput = document.getElementById('customer_phone');
-	
-	if (methodeSelect && orangePhoneGroup && customerPhoneInput) {
-		// Fonction pour afficher/masquer le champ téléphone
-		function toggleOrangePhoneField() {
-			if (methodeSelect.value === 'orange_money') {
-				orangePhoneGroup.style.display = 'block';
-				customerPhoneInput.setAttribute('required', 'required');
-			} else {
-				orangePhoneGroup.style.display = 'none';
-				customerPhoneInput.removeAttribute('required');
-				customerPhoneInput.value = '';
-			}
-		}
-		
-		// Vérifier au chargement de la page
-		toggleOrangePhoneField();
-		
-		// Écouter les changements
-		methodeSelect.addEventListener('change', toggleOrangePhoneField);
-		
-		// Validation spécifique pour Orange Money
-		if (paiementForm) {
-			paiementForm.addEventListener('submit', function(e) {
-				if (methodeSelect.value === 'orange_money') {
-					var phone = customerPhoneInput.value.trim();
-					if (!phone) {
-						e.preventDefault();
-						alert('Veuillez entrer le numéro de téléphone Orange Money du patient.');
-						customerPhoneInput.focus();
-						return false;
-					}
-					// Valider le format du numéro (optionnel mais recommandé)
-					var phoneRegex = /^(\+224|224|0)?[6-7]\d{8}$/;
-					if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
-						if (!confirm('Le format du numéro de téléphone semble incorrect. Voulez-vous continuer quand même ?')) {
-							e.preventDefault();
-							customerPhoneInput.focus();
-							return false;
-						}
-					}
-				}
-			});
-		}
-	}
 });
+
+// Fonction pour imprimer uniquement le reçu
+function imprimerRecu() {
+	var printContents = document.getElementById('recu-print').innerHTML;
+	var win = window.open('', '_blank');
+	win.document.open();
+	win.document.write('<html><head><title>Reçu de paiement</title>');
+	win.document.write('<style>body{font-family:Arial,sans-serif;padding:40px;background:#f5f5f5;} .receipt-container{max-width:800px;margin:0 auto;background:#fff;padding:40px;border:1px solid #e2e8f0;border-radius:8px;}</style>');
+	win.document.write('</head><body><div class="receipt-container">');
+	win.document.write(printContents);
+	win.document.write('</div><script>window.onload=function(){window.print();};<\/script></body></html>');
+	win.document.close();
+}
 </script>
 </body>
 </html>

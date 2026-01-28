@@ -47,7 +47,7 @@ foreach ($mes_ordonnances as $ordo) {
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Mes Ordonnances - Espace Médecin</title>
+	<title>Historique des Ordonnances - Espace Médecin</title>
 	<link rel="stylesheet" type="text/css" href="../assets/css/plugins.css">
 	<link rel="stylesheet" type="text/css" href="../assets/css/style.min.css">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -126,23 +126,6 @@ foreach ($mes_ordonnances as $ordo) {
 		.btn-print:hover {
 			background: #357ABD;
 		}
-		.btn-send {
-			background: #28a745;
-			color: white;
-			border: none;
-			padding: 8px 15px;
-			border-radius: 6px;
-			cursor: pointer;
-			font-size: 14px;
-			margin-top: 10px;
-		}
-		.btn-send:hover {
-			background: #218838;
-		}
-		.btn-send:disabled {
-			background: #6c757d;
-			cursor: not-allowed;
-		}
 		.alert {
 			padding: 15px;
 			border-radius: 6px;
@@ -199,7 +182,7 @@ foreach ($mes_ordonnances as $ordo) {
 						<i class="fa fa-arrow-left"></i> Retour au tableau de bord
 					</a>
 					<h1 style="color: #002939; margin-bottom: 20px;">
-						<i class="fa fa-prescription"></i> Mes Ordonnances
+						<i class="fa fa-prescription"></i> Historique des Ordonnances
 					</h1>
 					
 					<div class="info-box">
@@ -293,13 +276,6 @@ foreach ($mes_ordonnances as $ordo) {
 									<button type="button" class="btn-print" onclick="imprimerOrdonnance(<?php echo (int)$id_consultation; ?>)">
 										<i class="fa fa-print"></i> Imprimer l'ordonnance (remettre au patient)
 									</button>
-									<?php if (hasPermission('send_ordonnances')): ?>
-										<button type="button" class="btn-send" 
-												onclick="envoyerOrdonnance(<?php echo $id_consultation; ?>)"
-												id="btn-send-<?php echo $id_consultation; ?>">
-											<i class="fa fa-paper-plane"></i> Envoyer au patient
-										</button>
-									<?php endif; ?>
 								</div>
 							</div>
 						<?php endforeach; ?>
@@ -318,79 +294,7 @@ function imprimerOrdonnance(idConsultation) {
     window.open('imprimer-ordonnance.php?id_consultation=' + idConsultation + '&auto=1', 'impression_ordonnance', 'width=800,height=700,scrollbars=yes,resizable=yes');
 }
 
-function envoyerOrdonnance(idConsultation) {
-    const btn = document.getElementById('btn-send-' + idConsultation);
-    const originalText = btn.innerHTML;
-    
-    // Désactiver le bouton pendant l'envoi
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Envoi en cours...';
-    
-    // Créer un formulaire pour envoyer la requête POST
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'envoyer-ordonnance.php';
-    
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'id_consultation';
-    input.value = idConsultation;
-    form.appendChild(input);
-    
-    // Envoyer la requête avec fetch
-    fetch('envoyer-ordonnance.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'id_consultation=' + idConsultation
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Afficher un message de succès
-            showMessage('success', data.message);
-            btn.innerHTML = '<i class="fa fa-check"></i> Envoyé';
-            btn.style.background = '#28a745';
-        } else {
-            // Afficher un message d'erreur
-            showMessage('danger', data.message);
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        showMessage('danger', 'Une erreur est survenue lors de l\'envoi.');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    });
-}
-
-function showMessage(type, message) {
-    // Créer ou mettre à jour le message d'alerte
-    let alertDiv = document.querySelector('.alert-message');
-    if (!alertDiv) {
-        alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-' + type + ' alert-message';
-        const container = document.querySelector('.ordonnances-container .container .row .col-12');
-        const infoBox = container.querySelector('.info-box');
-        if (infoBox) {
-            infoBox.insertAdjacentElement('afterend', alertDiv);
-        } else {
-            container.insertBefore(alertDiv, container.firstChild);
-        }
-    }
-    
-    alertDiv.className = 'alert alert-' + type + ' alert-message';
-    alertDiv.textContent = message;
-    alertDiv.style.display = 'block';
-    
-    // Masquer le message après 5 secondes
-    setTimeout(() => {
-        alertDiv.style.display = 'none';
-    }, 5000);
-}
+// Plus d'envoi d'ordonnance : uniquement l'impression et la remise au patient.
 </script>
 </body>
 </html>

@@ -10,9 +10,13 @@ require_once '../config/database_functions.php';
 $services = [];
 $message = '';
 $message_type = '';
+$rdv_counts = [];
 
 try {
     $services = getAllServices();
+    if (function_exists('getRendezVousCountByService')) {
+        $rdv_counts = getRendezVousCountByService();
+    }
 } catch (Exception $e) {
     $message = "Erreur lors de la récupération des services : " . $e->getMessage();
     $message_type = "danger";
@@ -157,6 +161,73 @@ try {
         color: white;
         text-decoration: none;
     }
+
+    .service-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .btn-global-patients {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background-color: #2b6cb0;
+        color: #ffffff;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-global-patients i {
+        font-size: 14px;
+    }
+
+    .btn-global-patients:hover {
+        background-color: #2c5282;
+        color: #ffffff;
+        text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+    }
+
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        color: #fff;
+    }
+
+    .btn-action i {
+        font-size: 13px;
+    }
+
+    .btn-action-rdv {
+        background-color: #3182ce;
+    }
+
+    .btn-action-rdv:hover {
+        background-color: #2b6cb0;
+    }
+
+    .btn-action-patients {
+        background-color: #38a169;
+    }
+
+    .btn-action-patients:hover {
+        background-color: #2f855a;
+    }
 </style>
 
 <div class="page-container">
@@ -196,6 +267,7 @@ try {
                         <th>Description</th>
                         <th>Tarif</th>
                         <th>Date de création</th>
+                        <th>Vue par service</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -234,6 +306,14 @@ try {
                                     echo '-';
                                 }
                                 ?>
+                            </td>
+                            <td>
+                                <div class="service-actions">
+                                    <a href="entrer-service-comme-medecin.php?id_service=<?php echo urlencode($service['id_service']); ?>" 
+                                       class="btn-action btn-action-patients" title="Entrer dans ce service comme médecin">
+                                        <i class="fas fa-user-md"></i> Interface du service
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

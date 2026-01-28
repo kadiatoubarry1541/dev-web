@@ -18,6 +18,26 @@ $specialisation = $user_info['specialisation'] ?? '';
 $message = '';
 $message_type = '';
 $patients = [];
+$matricule_patient = trim($_POST['matricule_patient'] ?? '');
+$patient_par_matricule = null;
+
+// Recherche explicite par matricule via un petit formulaire (GET), comme pour l'ordonnance
+$matricule_recherche = trim($_GET['matricule'] ?? '');
+if (!empty($matricule_recherche) && function_exists('trouverPatientParMatriculeTouteBase')) {
+    try {
+        $patient_par_matricule = trouverPatientParMatriculeTouteBase($matricule_recherche);
+        $matricule_patient = $matricule_recherche;
+        if ($patient_par_matricule && !empty($patient_par_matricule['id_patient'])) {
+            $message = "Patient identifié par matricule : " . htmlspecialchars(($patient_par_matricule['Prénom_patient'] ?? '') . ' ' . ($patient_par_matricule['Nom_patient'] ?? '')) . " (" . htmlspecialchars($patient_par_matricule['Matricule_patient'] ?? $matricule_recherche) . ").";
+            $message_type = "success";
+        } else {
+            $message = "Aucun patient trouvé avec le matricule « " . htmlspecialchars($matricule_recherche) . " ». Vérifiez le matricule ou choisissez un patient dans la liste.";
+            $message_type = "warning";
+        }
+    } catch (Exception $e) {
+        error_log("Erreur recherche patient par matricule (carnet - recherche): " . $e->getMessage());
+    }
+}
 
 if ($id_med) {
     try {
@@ -25,6 +45,13 @@ if ($id_med) {
             $patients = getPatientsByMedecin($id_med, $specialisation);
         } else {
             $patients = getPatientsByMedecin($id_med, null);
+        }
+        // Si un patient a été identifié par matricule et qu'il n'est pas déjà dans la liste, l'ajouter
+        if ($patient_par_matricule && !empty($patient_par_matricule['id_patient'])) {
+            $ids_existants = array_column($patients, 'id_patient');
+            if (!in_array($patient_par_matricule['id_patient'], $ids_existants, true)) {
+                array_unshift($patients, $patient_par_matricule);
+            }
         }
     } catch (Exception $e) {
         error_log("Erreur creer-carnet: " . $e->getMessage());
@@ -38,24 +65,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['creer_carnet'])) {
     $id_patient = !empty($_POST['id_patient']) ? intval($_POST['id_patient']) : null;
     $libelle = trim($_POST['libelle'] ?? '');
 
+    // Identification par matricule (comme pour l'ordonnance) : si un matricule est saisi, il devient la clé principale
+    $patient_par_matricule = null;
+    if (empty($id_patient) && !empty($matricule_patient) && function_exists('trouverPatientParMatriculeTouteBase')) {
+        try {
+            $patient_par_matricule = trouverPatientParMatriculeTouteBase($matricule_patient);
+            if ($patient_par_matricule && !empty($patient_par_matricule['id_patient'])) {
+                $id_patient = (int) $patient_par_matricule['id_patient'];
+            }
+        } catch (Exception $e) {
+            error_log("Erreur recherche patient par matricule (carnet): " . $e->getMessage());
+        }
+    }
+
     if (empty($id_patient)) {
-        $message = "Veuillez sélectionner un patient.";
+        $message = !empty($matricule_patient)
+            ? "Aucun patient trouvé pour le matricule « " . htmlspecialchars($matricule_patient) . " ». Vérifiez le matricule ou sélectionnez un patient dans la liste."
+            : "Veuillez saisir le matricule du patient ou sélectionner un patient dans la liste.";
         $message_type = "danger";
     } elseif (empty($libelle)) {
         $message = "Veuillez saisir un libellé pour le carnet.";
         $message_type = "danger";
     } else {
         try {
-            // Vérifier que le patient appartient au service du médecin
+            // Vérifier que le patient appartient au service du médecin,
+            // sauf s'il a été identifié explicitement par son matricule (cas fort : on lui fait confiance)
             $patient_trouve = false;
-            foreach ($patients as $p) {
-                if (isset($p['id_patient']) && (int)$p['id_patient'] === $id_patient) {
-                    $patient_trouve = true;
-                    break;
+
+            if ($patient_par_matricule && (int)$patient_par_matricule['id_patient'] === $id_patient) {
+                $patient_trouve = true;
+            } else {
+                foreach ($patients as $p) {
+                    if (isset($p['id_patient']) && (int)$p['id_patient'] === $id_patient) {
+                        $patient_trouve = true;
+                        break;
+                    }
                 }
             }
+
             if (!$patient_trouve) {
-                $message = "Ce patient n'appartient pas à votre service.";
+                $message = "Ce patient n'appartient pas à votre service. Utilisez le matricule pour l'identifier ou sélectionnez un patient de votre liste.";
                 $message_type = "danger";
             } else {
                 creerCarnet($libelle, $id_patient);
@@ -77,6 +126,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['creer_carnet'])) {
 }
 
 $libelle_defaut = "Carnet de santé - " . date('Y');
+$selected_id_patient = !empty($_POST['id_patient']) ? (int)$_POST['id_patient'] : null;
+if ($patient_par_matricule && !empty($patient_par_matricule['id_patient'])) {
+    $selected_id_patient = (int)$patient_par_matricule['id_patient'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -195,6 +248,30 @@ $libelle_defaut = "Carnet de santé - " . date('Y');
 						</div>
 					<?php endif; ?>
 
+					<!-- Bloc de recherche par matricule (identification du patient) -->
+					<div class="carnet-card" style="border-left-color:#28a745;">
+						<h3 style="margin-bottom: 16px; color: #002939;">
+							<i class="fa fa-id-card"></i> Rechercher un patient par matricule
+						</h3>
+						<form method="get" action="" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+							<div class="form-group" style="margin-bottom:0;flex:1;min-width:220px;">
+								<label for="matricule_recherche">Matricule du patient</label>
+								<input type="text"
+									   name="matricule"
+									   id="matricule_recherche"
+									   class="form-control"
+									   value="<?php echo htmlspecialchars($matricule_patient ?: $matricule_recherche); ?>"
+									   placeholder="Ex : PAT202601234116">
+							</div>
+							<button type="submit" class="btn-submit" style="padding:10px 20px;">
+								<i class="fa fa-search"></i> Rechercher
+							</button>
+						</form>
+						<small style="color:#666;display:block;margin-top:8px;">
+							Saisissez le matricule pour identifier automatiquement le patient. Il sera pré‑sélectionné dans le formulaire ci‑dessous.
+						</small>
+					</div>
+
 					<form method="POST" action="">
 						<div class="carnet-card">
 							<h3 style="margin-bottom: 20px; color: #002939;">
@@ -202,12 +279,27 @@ $libelle_defaut = "Carnet de santé - " . date('Y');
 							</h3>
 
 							<div class="form-group">
-								<label for="id_patient">Patient <span style="color: #dc3545;">*</span></label>
-								<select name="id_patient" id="id_patient" class="form-control" required>
+								<label for="matricule_patient">Matricule du patient (clé principale) <span style="color: #dc3545;">*</span></label>
+								<input type="text"
+									   name="matricule_patient"
+									   id="matricule_patient"
+									   class="form-control"
+									   value="<?php echo htmlspecialchars($matricule_patient); ?>"
+									   placeholder="Ex : PAT202601234116">
+								<small style="color:#666;">
+									<i class="fa fa-info-circle"></i> Saisissez le matricule pour retrouver automatiquement le patient.
+									Vous pouvez aussi sélectionner un patient dans la liste ci-dessous.
+								</small>
+							</div>
+
+							<div class="form-group">
+								<label for="id_patient">Ou sélectionner un patient dans la liste</label>
+								<select name="id_patient" id="id_patient" class="form-control">
 									<option value="">-- Choisir un patient --</option>
 									<?php if (!empty($patients)): ?>
 										<?php foreach ($patients as $patient): ?>
-											<option value="<?php echo (int)$patient['id_patient']; ?>">
+											<option value="<?php echo (int)$patient['id_patient']; ?>"
+												<?php echo ($selected_id_patient !== null && $selected_id_patient === (int)$patient['id_patient']) ? 'selected' : ''; ?>>
 												<?php
 												echo htmlspecialchars(($patient['Prénom_patient'] ?? '') . ' ' . ($patient['Nom_patient'] ?? ''));
 												if (!empty($patient['Matricule_patient'])) {
