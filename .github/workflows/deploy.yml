@@ -1,0 +1,43 @@
+name: Deploy to InfinityFree
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: # Permet de déclencher manuellement
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Deploy via FTP
+      uses: SamKirkland/FTP-Deploy-Action@4.3.0
+      with:
+        server: ftpupload.net
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./
+        server-dir: /htdocs/  # Changez en /public_html/ si nécessaire selon votre config InfinityFree
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          **/.env
+          **/.env.*
+          **/export_for_render.sql
+          **/.import_done*
+          **/config/bdd.local.php
+          **/*.log
+          **/logs/
+          **/tmp/
+          **/temp/
+          **/cache/
+          **/.idea/
+          **/.vscode/
+          **/test-*.php
+          **/fix-*.php
+          **/.DS_Store
+          **/Thumbs.db
