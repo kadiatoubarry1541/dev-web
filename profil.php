@@ -201,9 +201,9 @@ if ($is_patient) {
 	<meta property="og:title" content="MediCo. - Mon Profil">
 	<meta name="format-detection" content="telephone=no">
 	
-	<!-- FAVICONS ICON -->
-	<link rel="icon" href="images/favicon.ico" type="image/x-icon">
-	<link rel="shortcut icon" type="image/x-icon" href="images/favicon.png">
+	<!-- FAVICONS ICON - utiliser le logo du site -->
+	<link rel="icon" href="image/1.jpeg" type="image/jpeg">
+	<link rel="shortcut icon" href="image/1.jpeg" type="image/jpeg">
 	
 	<!-- PAGE TITLE HERE -->
 	<title>MediCo. - Mon Profil</title>

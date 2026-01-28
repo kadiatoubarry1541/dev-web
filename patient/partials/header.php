@@ -114,33 +114,33 @@ $page_title = $page_title ?? 'Espace Patient';
 <body>
     <aside class="admin-sidebar" id="sidebar">
         <div class="sidebar-header">
-            <a href="/ProjetClinique/patient/index.php" class="sidebar-logo">
-                <img src="/ProjetClinique/image/1.jpeg" alt="BM CONNECT">
+            <a href="/patient/index.php" class="sidebar-logo">
+                <img src="/image/1.jpeg" alt="Logo du site">
             </a>
         </div>
         <nav class="sidebar-nav">
             <div class="nav-section">
                 <div class="nav-section-title">Principal</div>
                 <div class="nav-item">
-                    <a href="/ProjetClinique/patient/index.php" class="nav-link <?php echo $page == 'index.php' ? 'active' : ''; ?>">
+                    <a href="/patient/index.php" class="nav-link <?php echo $page == 'index.php' ? 'active' : ''; ?>">
                         <i class="fas fa-tachometer-alt"></i>
                         <span>Tableau de bord</span>
                     </a>
                 </div>
                 <div class="nav-item">
-                    <a href="/ProjetClinique/profil.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], 'profil') !== false) ? 'active' : ''; ?>">
+                    <a href="/profil.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], 'profil') !== false) ? 'active' : ''; ?>">
                         <i class="fas fa-user"></i>
                         <span>Mon Profil</span>
                     </a>
                 </div>
                 <div class="nav-item">
-                    <a href="/ProjetClinique/patient/index.php#mes-rendez-vous" class="nav-link">
+                    <a href="/patient/index.php#mes-rendez-vous" class="nav-link">
                         <i class="fas fa-calendar-check"></i>
                         <span>Mes rendez-vous</span>
                     </a>
                 </div>
                 <div class="nav-item">
-                    <a href="/ProjetClinique/rendez-vous.php" class="nav-link">
+                    <a href="/rendez-vous.php" class="nav-link">
                         <i class="fas fa-calendar-plus"></i>
                         <span>Prendre rendez-vous</span>
                     </a>
@@ -158,8 +158,8 @@ $page_title = $page_title ?? 'Espace Patient';
                 </div>
             </div>
             <div class="sidebar-footer-links">
-                <a href="/ProjetClinique/index.php" class="sidebar-footer-link"><i class="fas fa-home"></i> Site</a>
-                <a href="/ProjetClinique/deconnexion.php" class="sidebar-footer-link"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                <a href="/index.php" class="sidebar-footer-link"><i class="fas fa-home"></i> Site</a>
+                <a href="/deconnexion.php" class="sidebar-footer-link"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
             </div>
         </div>
     </aside>
@@ -172,7 +172,7 @@ $page_title = $page_title ?? 'Espace Patient';
                 <h1 class="topbar-title"><?php echo htmlspecialchars($page_title); ?></h1>
             </div>
             <div class="topbar-actions">
-                <a href="/ProjetClinique/index.php" class="btn-topbar btn-topbar-secondary">
+                <a href="/index.php" class="btn-topbar btn-topbar-secondary">
                     <i class="fas fa-home"></i> Site Public
                 </a>
             </div>

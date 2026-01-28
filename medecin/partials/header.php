@@ -174,7 +174,7 @@ $page_title = $page_title ?? 'Espace Médecin';
     <aside class="admin-sidebar" id="sidebar">
         <div class="sidebar-header">
             <a href="index.php" class="sidebar-logo">
-                <img src="/ProjetClinique/image/1.jpeg" alt="BM CONNECT">
+                <img src="/image/1.jpeg" alt="Logo du site">
             </a>
         </div>
         <nav class="sidebar-nav">
@@ -241,8 +241,8 @@ $page_title = $page_title ?? 'Espace Médecin';
                 </div>
             </div>
             <div class="sidebar-footer-links">
-                <a href="/ProjetClinique/index.php" class="sidebar-footer-link"><i class="fas fa-home"></i> Site</a>
-                <a href="/ProjetClinique/deconnexion.php" class="sidebar-footer-link"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                <a href="/index.php" class="sidebar-footer-link"><i class="fas fa-home"></i> Site</a>
+                <a href="/deconnexion.php" class="sidebar-footer-link"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
             </div>
         </div>
     </aside>
@@ -260,7 +260,7 @@ $page_title = $page_title ?? 'Espace Médecin';
                         <i class="fas fa-arrow-left"></i> Retour à l'admin
                     </a>
                 <?php endif; ?>
-                <a href="/ProjetClinique/index.php" class="btn-topbar btn-topbar-secondary">
+                <a href="/index.php" class="btn-topbar btn-topbar-secondary">
                     <i class="fas fa-home"></i> Site Public
                 </a>
             </div>

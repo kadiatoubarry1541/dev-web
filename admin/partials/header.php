@@ -340,7 +340,7 @@ try {
     <aside class="admin-sidebar" id="sidebar">
         <div class="sidebar-header">
             <a href="index.php" class="sidebar-logo">
-                <img src="/ProjetClinique/image/1.jpeg" alt="" style="height:32px; width:auto; display:block;">
+                <img src="/image/1.jpeg" alt="Logo du site" style="height:32px; width:auto; display:block;">
             </a>
         </div>
         
@@ -449,10 +449,10 @@ try {
                 </div>
             </div>
             <div class="sidebar-footer-links">
-                <a href="/ProjetClinique/index.php" class="sidebar-footer-link">
+                <a href="/index.php" class="sidebar-footer-link">
                     <i class="fas fa-home"></i> Site
                 </a>
-                <a href="/ProjetClinique/deconnexion.php" class="sidebar-footer-link">
+                <a href="/deconnexion.php" class="sidebar-footer-link">
                     <i class="fas fa-sign-out-alt"></i> Déconnexion
                 </a>
             </div>
@@ -469,7 +469,7 @@ try {
                 <h1 class="topbar-title">Tableau de bord</h1>
             </div>
             <div class="topbar-actions">
-                <a href="/ProjetClinique/index.php" class="btn-topbar btn-topbar-secondary">
+                <a href="/index.php" class="btn-topbar btn-topbar-secondary">
                     <i class="fas fa-home"></i> Site Public
                 </a>
             </div>
