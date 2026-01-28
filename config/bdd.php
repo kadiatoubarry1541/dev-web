@@ -6,12 +6,26 @@ if (!defined('BDD_INCLUDED')) {
     
     if (!function_exists('bdd')) {
         function bdd() {
-            // Variables d'environnement (Render, etc.) ou valeurs par défaut (local XAMPP)
-            $server = getenv('MYSQL_HOST') ?: 'localhost';
-            $dbname = getenv('MYSQL_DATABASE') ?: 'santé1';
-            $port = getenv('MYSQL_PORT') ?: '3306';
-            $username = getenv('MYSQL_USER') ?: 'root';
-            $password = getenv('MYSQL_PASSWORD') ?: '';
+            // Détection automatique si on est sur InfinityFree
+            $isInfinityFree = strpos($_SERVER['HTTP_HOST'] ?? '', 'infinityfreeapp.com') !== false || 
+                             strpos($_SERVER['HTTP_HOST'] ?? '', 'great-site.net') !== false ||
+                             strpos($_SERVER['HTTP_HOST'] ?? '', 'infinityfree.net') !== false;
+            
+            if ($isInfinityFree) {
+                // Configuration InfinityFree
+                $server = 'sql302.infinityfree.com';
+                $dbname = 'if0_41017295_sante1';
+                $port = '3306';
+                $username = 'if0_41017295';
+                $password = 'MallBzKQE6BiI'; // Mot de passe MySQL InfinityFree
+            } else {
+                // Variables d'environnement (Render, etc.) ou valeurs par défaut (local XAMPP)
+                $server = getenv('MYSQL_HOST') ?: 'localhost';
+                $dbname = getenv('MYSQL_DATABASE') ?: 'sante1'; // Utiliser 'sante1' sans accent pour InfinityFree
+                $port = getenv('MYSQL_PORT') ?: '3306';
+                $username = getenv('MYSQL_USER') ?: 'root';
+                $password = getenv('MYSQL_PASSWORD') ?: '';
+            }
             
             try {
                 // D'abord se connecter sans spécifier la base de données
