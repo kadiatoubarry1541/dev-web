@@ -1,0 +1,941 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: Jan 28, 2026 at 03:06 PM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.0.30
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `santé1`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `carnet`
+--
+
+CREATE TABLE `carnet` (
+  `id_carnet` int(11) NOT NULL,
+  `numero_carnet` varchar(50) NOT NULL,
+  `id_patient` int(11) NOT NULL,
+  `date_creation` date NOT NULL,
+  `date_impression` date DEFAULT NULL,
+  `statut` enum('actif','perdu') DEFAULT 'actif'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Carnet médical unique pour chaque patient';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `carnets`
+--
+
+CREATE TABLE `carnets` (
+  `Num_carnet` int(11) NOT NULL,
+  `Libellé` varchar(200) NOT NULL,
+  `id_patient` int(11) NOT NULL,
+  `Date_creation` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `carnets`
+--
+
+INSERT INTO `carnets` (`Num_carnet`, `Libellé`, `id_patient`, `Date_creation`) VALUES
+(1, 'Carnet principal - 2026', 1, '2026-01-27 14:05:07'),
+(2, 'Carnet principal - 2026', 4, '2026-01-27 15:23:13'),
+(3, 'Carnet principal - 2026', 5, '2026-01-28 10:10:46'),
+(4, 'Carnet de santé - 2026', 4, '2026-01-28 11:03:10'),
+(5, 'Carnet de santé - 2026', 4, '2026-01-28 11:08:54');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `consultation`
+--
+
+CREATE TABLE `consultation` (
+  `id_consultation` int(11) NOT NULL,
+  `id_medecin` int(11) NOT NULL,
+  `id_patient` int(11) NOT NULL,
+  `id_med` int(11) DEFAULT NULL,
+  `Num_carnet` int(11) DEFAULT NULL,
+  `date_consultation` datetime NOT NULL,
+  `Motif_diagnostic` text DEFAULT NULL,
+  `motif` text NOT NULL,
+  `diagnostique` text DEFAULT NULL,
+  `note` text DEFAULT NULL,
+  `statut` enum('en cours','terminée') DEFAULT 'en cours'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Consultations effectuées par les médecins';
+
+--
+-- Dumping data for table `consultation`
+--
+
+INSERT INTO `consultation` (`id_consultation`, `id_medecin`, `id_patient`, `id_med`, `Num_carnet`, `date_consultation`, `Motif_diagnostic`, `motif`, `diagnostique`, `note`, `statut`) VALUES
+(2, 0, 4, 21, 5, '2026-01-28 13:02:50', 'Ordonnance médicale - Maternité', '', NULL, 'Consultation créée automatiquement lors de la création d\'une ordonnance.', ''),
+(3, 0, 4, 21, 5, '2026-01-28 13:13:37', 'Ordonnance médicale - Maternité', '', NULL, 'Consultation créée automatiquement lors de la création d\'une ordonnance.', ''),
+(4, 0, 5, 21, 3, '2026-01-28 13:15:09', 'Ordonnance médicale - Maternité', '', NULL, 'Consultation créée automatiquement lors de la création d\'une ordonnance.', '');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `consultation_services`
+--
+
+CREATE TABLE `consultation_services` (
+  `id_consultation` int(11) NOT NULL,
+  `id_med` int(11) NOT NULL,
+  `id_service` int(11) NOT NULL,
+  `Date_creation` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `demande_rendez_vous`
+--
+
+CREATE TABLE `demande_rendez_vous` (
+  `id_demande` int(11) NOT NULL,
+  `Date_rdv_souhaitee` datetime NOT NULL,
+  `email_demandeur` varchar(255) DEFAULT NULL,
+  `nom_demandeur` varchar(200) DEFAULT NULL,
+  `matricule_demandeur` varchar(100) DEFAULT NULL,
+  `id_service` int(11) DEFAULT NULL,
+  `motif` text DEFAULT NULL,
+  `id_user` int(11) DEFAULT NULL,
+  `statut` varchar(50) DEFAULT 'en_attente_accueil',
+  `Date_creation` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `demande_rendez_vous`
+--
+
+INSERT INTO `demande_rendez_vous` (`id_demande`, `Date_rdv_souhaitee`, `email_demandeur`, `nom_demandeur`, `matricule_demandeur`, `id_service`, `motif`, `id_user`, `statut`, `Date_creation`) VALUES
+(1, '2026-11-11 11:11:00', 'kadiatou24@gmail.com', 'condé boubacar', 'PAT202601240003', 2, NULL, 8, 'traitee', '2026-01-27 16:53:42'),
+(2, '2026-11-11 23:23:00', 'kadiatou245@gmail.com', 'Diallo ISMATOU', 'PAT202601234116', 2, NULL, 2, 'traitee', '2026-01-27 17:23:31'),
+(3, '2025-12-12 10:00:00', 'kadiatou245@gmail.com', 'Diallo ISMATOU', 'PAT202601234116', 1, 'HGHGJGH', 2, 'en_attente_service', '2026-01-27 18:20:55'),
+(4, '2026-12-12 00:00:00', 'kadiatou245@gmail.com', 'ISMATOU Diallo', 'PAT202601234116', 2, NULL, 2, 'traitee', '2026-01-28 08:44:23'),
+(5, '2026-12-11 11:11:00', 'kadiatou245@gmail.com', 'ISMATOU Diallo', 'PAT202601234116', 2, NULL, 2, 'traitee', '2026-01-28 09:09:56');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `medecin`
+--
+
+CREATE TABLE `medecin` (
+  `id_medecin` int(11) NOT NULL,
+  `matricule` varchar(50) NOT NULL,
+  `nom` varchar(100) NOT NULL,
+  `prenom` varchar(100) NOT NULL,
+  `specialite` varchar(100) NOT NULL,
+  `telephone` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `id_service` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Médecins appartenant à un service';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `medecins`
+--
+
+CREATE TABLE `medecins` (
+  `id_med` int(11) NOT NULL,
+  `Matricule_med` varchar(50) DEFAULT NULL,
+  `Nom_med` varchar(100) NOT NULL,
+  `Prénom_med` varchar(100) NOT NULL,
+  `Spécialisation_med` varchar(100) NOT NULL,
+  `Tel_med` varchar(20) DEFAULT NULL,
+  `Email_med` varchar(100) DEFAULT NULL,
+  `Photo_profil` varchar(255) DEFAULT NULL,
+  `statut` enum('en_attente','approuvé','refusé') DEFAULT 'en_attente',
+  `Date_creation` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `medecins`
+--
+
+INSERT INTO `medecins` (`id_med`, `Matricule_med`, `Nom_med`, `Prénom_med`, `Spécialisation_med`, `Tel_med`, `Email_med`, `Photo_profil`, `statut`, `Date_creation`) VALUES
+(1, 'MED001', 'Laurent', 'Sophie', 'Gynécologie-Obstétrique', '01 23 45 67 01', 's.laurent@medico.fr', NULL, 'en_attente', '2026-01-23 17:16:36'),
+(2, 'MED002', 'Dubois', 'Marc', 'Chirurgie générale', '01 23 45 67 02', 'm.dubois@medico.fr', NULL, 'en_attente', '2026-01-23 17:16:36'),
+(3, 'MED003', 'Moreau', 'Julie', 'Médecine générale', '01 23 45 67 03', 'j.moreau@medico.fr', NULL, 'en_attente', '2026-01-23 17:16:36'),
+(4, 'MED004', 'Renaud', 'Thomas', 'Ophtalmologie', '01 23 45 67 04', 't.renaud@medico.fr', NULL, 'approuvé', '2026-01-23 17:16:36'),
+(21, 'MED202601239889', 'Diallo', 'Tidian', 'Maternité', '+224612960760', 'Kadiatou154.kb@gmail.com', 'uploads/profiles/profile_6973b57fe9a92_1769190783.jfif', 'approuvé', '2026-01-23 17:53:04'),
+(22, 'MED202601270003', 'bah', 'issa', 'Chirurgie', '612345234', 'issa@gmail.com', 'uploads/profiles/profile_6974a9a3c2ba3_1769253283.jfif', 'approuvé', '2026-01-24 11:14:43'),
+(25, 'MED202601270001', 'bono', 'ALEXSI', 'Médecine générale', '612960760', 'Kadiatoua.kb@gmail.com', NULL, 'approuvé', '2026-01-27 09:22:20'),
+(26, 'MED202601270002', 'guilavogui', 'agnesse', 'Ophtalmologie', '+224612960603', 'kadiatouagne.kb@gmail.com', 'uploads/profiles/profile_6978be8da95d7_1769520781.jfif', 'approuvé', '2026-01-27 13:33:01');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `medicament`
+--
+
+CREATE TABLE `medicament` (
+  `id_medicament` int(11) NOT NULL,
+  `nom` varchar(200) NOT NULL,
+  `principe_actif` varchar(200) DEFAULT NULL,
+  `forme` varchar(50) DEFAULT NULL COMMENT 'Comprimé, sirop, injection, etc.',
+  `dosage` varchar(100) DEFAULT NULL,
+  `quantite_stock` int(11) DEFAULT 0,
+  `prix_unitaire` decimal(10,2) NOT NULL,
+  `date_peremption` date DEFAULT NULL,
+  `statut` enum('disponible','rupture_stock','perime') DEFAULT 'disponible',
+  `date_ajout` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Médicaments disponibles à la pharmacie de la clinique';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notifications`
+--
+
+CREATE TABLE `notifications` (
+  `id_notification` int(11) NOT NULL,
+  `id_patient` int(11) NOT NULL,
+  `titre` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `type` enum('paiement','rendez_vous','consultation','autre') DEFAULT 'autre',
+  `lien` varchar(500) DEFAULT NULL COMMENT 'Lien vers la page concernée (ex: reçu, rendez-vous)',
+  `lu` tinyint(1) DEFAULT 0 COMMENT '0 = Non lu, 1 = Lu',
+  `Date_creation` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `notifications`
+--
+
+INSERT INTO `notifications` (`id_notification`, `id_patient`, `titre`, `message`, `type`, `lien`, `lu`, `Date_creation`) VALUES
+(1, 4, 'Nouvelle ordonnance disponible', 'Votre médecin a créé une nouvelle ordonnance pour vous. Médicament : qsdfghjkl. Vous pouvez consulter votre ordonnance dans votre espace patient.', 'consultation', 'mes-ordonnances.php', 0, '2026-01-28 12:02:50'),
+(2, 4, 'Nouvelle ordonnance disponible', 'Votre médecin a créé une nouvelle ordonnance pour vous. Médicament : zertyuk. Vous pouvez consulter votre ordonnance dans votre espace patient.', 'consultation', 'mes-ordonnances.php', 0, '2026-01-28 12:13:37'),
+(3, 5, 'Nouvelle ordonnance disponible', 'Votre médecin a créé une nouvelle ordonnance pour vous. Médicament : sdfghj. Vous pouvez consulter votre ordonnance dans votre espace patient.', 'consultation', 'mes-ordonnances.php', 0, '2026-01-28 12:15:09'),
+(4, 5, 'Reçu de paiement disponible', 'Votre reçu de paiement d\'un montant de 0 GNF est maintenant disponible. Numéro de facture : FACT-20260128-F85E16. Vous pouvez le consulter dans votre espace patient.', 'paiement', 'paiements/voir-reçu.php?id=3', 0, '2026-01-28 12:53:19');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ordonnance`
+--
+
+CREATE TABLE `ordonnance` (
+  `id_ordonnance` int(11) NOT NULL,
+  `matricule` varchar(50) NOT NULL,
+  `id_consultation` int(11) NOT NULL,
+  `medicament` varchar(200) NOT NULL,
+  `dosage` varchar(100) NOT NULL,
+  `date_emission` date NOT NULL,
+  `statut` enum('en attente','validée') DEFAULT 'en attente'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Ordonnances générées après consultation';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ordonnances`
+--
+
+CREATE TABLE `ordonnances` (
+  `id_ordonnance` int(11) NOT NULL,
+  `Médicament` varchar(200) NOT NULL,
+  `Dosage` varchar(100) NOT NULL,
+  `Date_émission` date NOT NULL,
+  `Durée_traitement` varchar(50) DEFAULT NULL,
+  `Instructions` text DEFAULT NULL,
+  `id_consultation` int(11) NOT NULL,
+  `Date_creation` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `ordonnances`
+--
+
+INSERT INTO `ordonnances` (`id_ordonnance`, `Médicament`, `Dosage`, `Date_émission`, `Durée_traitement`, `Instructions`, `id_consultation`, `Date_creation`) VALUES
+(1, 'qsdfghjkl', '', '2026-01-28', NULL, NULL, 2, '2026-01-28 12:02:50'),
+(2, 'zertyuk', '', '2026-01-28', NULL, NULL, 3, '2026-01-28 12:13:37'),
+(3, 'sdfghj', '', '2026-01-28', NULL, NULL, 4, '2026-01-28 12:15:09');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `paiement`
+--
+
+CREATE TABLE `paiement` (
+  `id_paiement` int(11) NOT NULL,
+  `matricule` varchar(50) NOT NULL,
+  `id_patient` int(11) NOT NULL,
+  `id_consultation` int(11) NOT NULL,
+  `id_service` int(11) DEFAULT NULL,
+  `montant` decimal(10,2) NOT NULL,
+  `date_paiement` datetime NOT NULL,
+  `mode_paiement` enum('espèces','carte','chèque') DEFAULT NULL,
+  `statut` enum('en attente','payé') DEFAULT 'en attente',
+  `Méthode_paiement` enum('espèces','carte','chèque','virement') DEFAULT 'espèces',
+  `id_facture` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Paiements effectués par les patients';
+
+--
+-- Dumping data for table `paiement`
+--
+
+INSERT INTO `paiement` (`id_paiement`, `matricule`, `id_patient`, `id_consultation`, `id_service`, `montant`, `date_paiement`, `mode_paiement`, `statut`, `Méthode_paiement`, `id_facture`) VALUES
+(3, '', 5, 0, 2, 10000.00, '2026-01-28 13:53:00', NULL, 'payé', 'espèces', 'FACT-20260128-F85E16');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `patient`
+--
+
+CREATE TABLE `patient` (
+  `id_patient` int(11) NOT NULL,
+  `matricule` varchar(50) NOT NULL,
+  `nom` varchar(100) NOT NULL,
+  `prenom` varchar(100) NOT NULL,
+  `sexe` enum('M','F') NOT NULL,
+  `date_naissance` date NOT NULL,
+  `telephone` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `adresse` text DEFAULT NULL,
+  `id_service` int(11) DEFAULT NULL,
+  `numero_carnet` varchar(50) NOT NULL,
+  `date_creation` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Table des patients du système hospitalier';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `patients`
+--
+
+CREATE TABLE `patients` (
+  `id_patient` int(11) NOT NULL,
+  `Matricule_patient` varchar(50) NOT NULL,
+  `Nom_patient` varchar(100) NOT NULL,
+  `Prénom_patient` varchar(100) NOT NULL,
+  `Date_naissance_patient` date NOT NULL,
+  `Tel_patient` varchar(20) DEFAULT NULL,
+  `Email_patient` varchar(100) DEFAULT NULL,
+  `Adresse_patient` text DEFAULT NULL,
+  `Photo_profil` varchar(255) DEFAULT NULL,
+  `Date_creation` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `patients`
+--
+
+INSERT INTO `patients` (`id_patient`, `Matricule_patient`, `Nom_patient`, `Prénom_patient`, `Date_naissance_patient`, `Tel_patient`, `Email_patient`, `Adresse_patient`, `Photo_profil`, `Date_creation`) VALUES
+(1, 'PAT202601234116', 'Diallo', 'ISMATOU', '0000-00-00', '+224612960760', 'kadiatou245@gmail.com', 'guinee 224', 'uploads/profiles/profile_6973adf77cdad_1769188855.jfif', '2026-01-23 17:20:55'),
+(2, 'PAT202601234117', 'Kadiatou', 'Barry', '1900-01-01', '612960760', 'Kadiatou@gmail.com', 'aguinee 224', NULL, '2026-01-23 21:02:00'),
+(3, 'PAT202601240001', 'Kadiatou', 'Barry', '1900-01-01', '612960760', 'Kadiatou11.kb@gmail.com', 'guinee 224', NULL, '2026-01-24 04:52:31'),
+(4, 'PAT202601240002', 'soumah', 'mohamed', '2026-11-11', '612960763', 'kadiatou4@gmail.com', 'Mamou', NULL, '2026-01-24 07:15:28'),
+(5, 'PAT202601240003', 'condé', 'boubacar', '0000-00-00', '+224612960764', 'kadiatou24@gmail.com', 'Mamou', 'uploads/profiles/profile_6974728f566d0_1769239183.jfif', '2026-01-24 07:19:43'),
+(6, 'PAT202601240004', 'bah', 'sorry', '0000-00-00', '+224612960760', 'kadiatou9.kb@gmail.com', 'guinee 224', 'uploads/profiles/profile_6974aafb8baa3_1769253627.jfif', '2026-01-24 11:20:27'),
+(7, 'PAT202601270001', 'bah', 'ba', '2002-12-12', '111111111111', 'kadiatou111@gmail.com', 'gj', NULL, '2026-01-27 19:08:24'),
+(8, 'PAT202601270002', 'Kadiatou2343', 'Barry', '1900-01-01', '61296076034', 'Kadiatou1111.kb@gmail.com', 'guinee 224', NULL, '2026-01-27 19:15:53');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `patient_services`
+--
+
+CREATE TABLE `patient_services` (
+  `id` int(11) NOT NULL,
+  `id_patient` int(11) NOT NULL,
+  `id_service` int(11) NOT NULL,
+  `Date_inscription` timestamp NOT NULL DEFAULT current_timestamp(),
+  `Statut` enum('inscrit','en_attente','traité') DEFAULT 'inscrit'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `patient_services`
+--
+
+INSERT INTO `patient_services` (`id`, `id_patient`, `id_service`, `Date_inscription`, `Statut`) VALUES
+(1, 4, 1, '2026-01-24 07:15:28', 'inscrit'),
+(2, 1, 2, '2026-01-27 13:56:05', 'inscrit'),
+(3, 7, 2, '2026-01-27 19:08:24', 'inscrit'),
+(4, 8, 2, '2026-01-27 19:15:53', 'inscrit');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `rendez_vous`
+--
+
+CREATE TABLE `rendez_vous` (
+  `id_rendez_vous` int(11) NOT NULL,
+  `id_patient` int(11) NOT NULL,
+  `id_med` int(11) DEFAULT NULL,
+  `id_service` int(11) DEFAULT NULL,
+  `id_medecin` int(11) NOT NULL,
+  `date_rdv` datetime NOT NULL,
+  `motif` text DEFAULT NULL,
+  `statut` enum('confirmé','annulé','terminé') DEFAULT 'confirmé',
+  `notification_envoyee` tinyint(1) DEFAULT 0,
+  `date_notification` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Rendez-vous réservés par les patients';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `service`
+--
+
+CREATE TABLE `service` (
+  `id_service` int(11) NOT NULL,
+  `nom` varchar(100) NOT NULL,
+  `tarif` decimal(10,2) NOT NULL,
+  `description` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Services médicaux disponibles';
+
+--
+-- Dumping data for table `service`
+--
+
+INSERT INTO `service` (`id_service`, `nom`, `tarif`, `description`) VALUES
+(1, 'Ophtalmologie', 150.00, 'Service spécialisé dans le diagnostic et le traitement des maladies des yeux. Consultations, examens de la vue, chirurgie oculaire et suivi des pathologies oculaires.'),
+(2, 'Chirurgie', 500.00, 'Service de chirurgie générale et spécialisée. Interventions chirurgicales, consultations pré-opératoires et post-opératoires, suivi des patients opérés.'),
+(3, 'Maternité', 200.00, 'Service dédié à la santé de la mère et de l\'enfant. Suivi de grossesse, accouchement, consultations gynécologiques et pédiatriques.'),
+(4, 'Médecine Générale', 80.00, 'Service de médecine générale pour tous types de consultations. Diagnostic, traitement des maladies courantes, suivi médical et prévention.'),
+(5, 'Pharmacie', 0.00, 'Service pharmaceutique de la clinique. Vente de médicaments, vérification de disponibilité, conseils pharmaceutiques et suivi des ordonnances.');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `services`
+--
+
+CREATE TABLE `services` (
+  `id_service` int(11) NOT NULL,
+  `Nom_service` varchar(100) NOT NULL,
+  `Tarif` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `Description` text DEFAULT NULL,
+  `Date_creation` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `services`
+--
+
+INSERT INTO `services` (`id_service`, `Nom_service`, `Tarif`, `Description`, `Date_creation`) VALUES
+(1, 'Consultation générale', 5000.00, 'Consultation médicale générale', '2026-01-23 17:16:36'),
+(2, 'Maternité', 10000.00, 'Suivi de grossesse et accouchement', '2026-01-23 17:16:36'),
+(3, 'Chirurgie', 50000.00, 'Interventions chirurgicales', '2026-01-23 17:16:36'),
+(4, 'Ophtalmologie', 8000.00, 'Examens et soins oculaires', '2026-01-23 17:16:36'),
+(5, 'Consultation générale', 5000.00, 'Consultation médicale générale', '2026-01-23 17:16:41'),
+(6, 'Maternité', 10000.00, 'Suivi de grossesse et accouchement', '2026-01-23 17:16:41'),
+(7, 'Chirurgie', 50000.00, 'Interventions chirurgicales', '2026-01-23 17:16:41'),
+(8, 'Ophtalmologie', 8000.00, 'Examens et soins oculaires', '2026-01-23 17:16:41'),
+(9, 'Consultation générale', 5000.00, 'Consultation médicale générale', '2026-01-23 17:16:42'),
+(10, 'Maternité', 10000.00, 'Suivi de grossesse et accouchement', '2026-01-23 17:16:42'),
+(11, 'Chirurgie', 50000.00, 'Interventions chirurgicales', '2026-01-23 17:16:42'),
+(12, 'Ophtalmologie', 8000.00, 'Examens et soins oculaires', '2026-01-23 17:16:42'),
+(13, 'Consultation générale', 5000.00, 'Consultation médicale générale', '2026-01-23 17:16:44'),
+(14, 'Maternité', 10000.00, 'Suivi de grossesse et accouchement', '2026-01-23 17:16:44'),
+(15, 'Chirurgie', 50000.00, 'Interventions chirurgicales', '2026-01-23 17:16:44'),
+(16, 'Ophtalmologie', 8000.00, 'Examens et soins oculaires', '2026-01-23 17:16:44'),
+(17, 'Consultation générale', 5000.00, 'Consultation médicale générale', '2026-01-23 17:19:02'),
+(18, 'Maternité', 10000.00, 'Suivi de grossesse et accouchement', '2026-01-23 17:19:02'),
+(19, 'Chirurgie', 50000.00, 'Interventions chirurgicales', '2026-01-23 17:19:02'),
+(20, 'Ophtalmologie', 8000.00, 'Examens et soins oculaires', '2026-01-23 17:19:02');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `users`
+--
+
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL,
+  `nom` varchar(100) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `telephone` varchar(20) DEFAULT NULL,
+  `password` varchar(255) NOT NULL,
+  `photo_profil` varchar(255) DEFAULT NULL,
+  `role` enum('patient','medecin','admin','accueil') DEFAULT 'patient',
+  `id_patient` int(11) DEFAULT NULL,
+  `id_med` int(11) DEFAULT NULL,
+  `Date_creation` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`id`, `nom`, `email`, `telephone`, `password`, `photo_profil`, `role`, `id_patient`, `id_med`, `Date_creation`) VALUES
+(1, 'Administrateur', 'deveweb.groupe1@gmail.com', '', '$2y$10$LkMpQd9SfrxKaK95iRWlhujMrLziZvu4tqNreUDrOHDUF/LT.5YYu', NULL, 'admin', NULL, NULL, '2026-01-23 17:16:36'),
+(2, 'Diallo ISMATOU', 'kadiatou245@gmail.com', '+224612960760', '$2y$10$OH9K8ca398BMoIbH.WA3..F7xJDqrRq39qN/oDAKYLseCKZRj03Me', 'uploads/profiles/profile_6973adf77cdad_1769188855.jfif', 'patient', 1, NULL, '2026-01-23 17:20:55'),
+(3, 'Diallo Tidian', 'Kadiatou154.kb@gmail.com', '+224612960760', '$2y$10$vIM6C6/378qi2NqZzFLOUOAv9mCO.nhVWBJ8tyvuwLFuEbSpyQuGG', 'uploads/profiles/profile_6973b57fe9a92_1769190783.jfif', 'medecin', NULL, 21, '2026-01-23 17:53:04'),
+(4, 'Gérante Accueil', 'Kadiatou15.kb@gmail.com', '', '$2y$10$QGCwIwNwg.uI2sw4Ya9EWemEmJXkuxSzT9Gbi0nvajwjNiRMpIIlW', NULL, 'accueil', NULL, NULL, '2026-01-23 20:24:03'),
+(5, 'Kadiatou Barry', 'Kadiatou@gmail.com', '612960760', '$2y$10$Tt.k7cdM1SuxXhFecTf6gOVNwfePk.wuadKTPUB8x0Korv/KUUZZq', NULL, 'patient', 2, NULL, '2026-01-23 21:02:00'),
+(6, 'Kadiatou Barry', 'Kadiatou11.kb@gmail.com', '612960760', '$2y$10$kPJVNGjY.2G/paEmyLE9b.jhKRca.7.dG/er8/INvdg5tjvut04ee', NULL, 'patient', 3, NULL, '2026-01-24 04:52:31'),
+(7, 'soumah mohamed', 'kadiatou4@gmail.com', '612960763', '$2y$10$AuDioWDDYIzsZuCGsG3GLuWPhWyWl/hKjlXUjwGnTuSKSorVtjH9i', NULL, 'patient', 4, NULL, '2026-01-24 07:15:28'),
+(8, 'condé boubacar', 'kadiatou24@gmail.com', '+224612960764', '$2y$10$y8BaIssAkQVLEsbHTZu92OBcqlloWaLhTpz88rDDxn24ipxWb96mC', 'uploads/profiles/profile_6974728f566d0_1769239183.jfif', 'patient', 5, NULL, '2026-01-24 07:19:43'),
+(9, 'bah issa', 'issa@gmail.com', '612345234', '$2y$10$p0QSNEVpH7iWC7fJwZfla./1RtlGLklWpCOwK63h.PgiK2EN0MyA2', 'uploads/profiles/profile_6974a9a3c2ba3_1769253283.jfif', 'medecin', NULL, 22, '2026-01-24 11:14:43'),
+(10, 'bah sorry', 'kadiatou9.kb@gmail.com', '+224612960760', '$2y$10$Vt09DmMCLHIW0vsH07ePMuODS3S1WURGcyYOoHs/CKQdd7kNdS2QS', 'uploads/profiles/profile_6974aafb8baa3_1769253627.jfif', 'patient', 6, NULL, '2026-01-24 11:20:27'),
+(11, 'bono ALEXSI', 'Kadiatoua.kb@gmail.com', '612960760', '$2y$10$b0IrL3YlbsIclWeAuho02.0IuUwKNrMEcobKoNLAvDEq5ovDdJmka', NULL, 'medecin', NULL, 25, '2026-01-27 09:22:20'),
+(12, 'guilavogui agnesse', 'kadiatouagne.kb@gmail.com', '+224612960603', '$2y$10$DIPNJtXQef0c2CQ7NKyll.0zw9DvlhW4.v/AdD/2O9taV4NHzheNW', 'uploads/profiles/profile_6978be8da95d7_1769520781.jfif', 'medecin', NULL, 26, '2026-01-27 13:33:01'),
+(13, 'bah ba', 'kadiatou111@gmail.com', '111111111111', '$2y$10$7pXhtGOnH1Q2BTVLbZRen.K195hlhER58MP4bz7o5hmyodrpepEzy', NULL, 'patient', 7, NULL, '2026-01-27 19:08:24'),
+(14, 'Kadiatou2343 Barry', 'Kadiatou1111.kb@gmail.com', '61296076034', '$2y$10$zvz4jaEgr02w8/laCIw4XeUt4Z30TYVv4xEyIhLE4HYvcXRit8nXW', NULL, 'patient', 8, NULL, '2026-01-27 19:15:53');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `utilisateur`
+--
+
+CREATE TABLE `utilisateur` (
+  `id_utilisateur` int(11) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `mot_de_passe` varchar(255) NOT NULL,
+  `role` enum('admin','accueil','caisse','medecin','patient') NOT NULL,
+  `id_reference` int(11) DEFAULT NULL COMMENT 'Référence à PATIENT.id_patient, MEDECIN.id_medecin, ou NULL pour admin/accueil/caisse',
+  `date_creation` datetime DEFAULT current_timestamp(),
+  `actif` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Utilisateurs du système avec leurs rôles';
+
+--
+-- Dumping data for table `utilisateur`
+--
+
+INSERT INTO `utilisateur` (`id_utilisateur`, `email`, `mot_de_passe`, `role`, `id_reference`, `date_creation`, `actif`) VALUES
+(1, 'admin@santeest.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', NULL, '2026-01-22 21:22:41', 1);
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `carnet`
+--
+ALTER TABLE `carnet`
+  ADD PRIMARY KEY (`id_carnet`),
+  ADD UNIQUE KEY `numero_carnet` (`numero_carnet`),
+  ADD UNIQUE KEY `id_patient` (`id_patient`),
+  ADD KEY `idx_carnet_numero` (`numero_carnet`),
+  ADD KEY `idx_carnet_patient` (`id_patient`);
+
+--
+-- Indexes for table `carnets`
+--
+ALTER TABLE `carnets`
+  ADD PRIMARY KEY (`Num_carnet`),
+  ADD KEY `idx_patient` (`id_patient`);
+
+--
+-- Indexes for table `consultation`
+--
+ALTER TABLE `consultation`
+  ADD PRIMARY KEY (`id_consultation`),
+  ADD KEY `idx_consultation_patient` (`id_patient`),
+  ADD KEY `idx_consultation_medecin` (`id_medecin`),
+  ADD KEY `idx_consultation_date` (`date_consultation`),
+  ADD KEY `idx_consultation_statut` (`statut`),
+  ADD KEY `idx_med_consult` (`id_med`);
+
+--
+-- Indexes for table `consultation_services`
+--
+ALTER TABLE `consultation_services`
+  ADD PRIMARY KEY (`id_consultation`,`id_med`,`id_service`),
+  ADD KEY `idx_consultation` (`id_consultation`),
+  ADD KEY `idx_med` (`id_med`),
+  ADD KEY `idx_service` (`id_service`);
+
+--
+-- Indexes for table `demande_rendez_vous`
+--
+ALTER TABLE `demande_rendez_vous`
+  ADD PRIMARY KEY (`id_demande`),
+  ADD KEY `idx_statut` (`statut`),
+  ADD KEY `idx_date_souhaitee` (`Date_rdv_souhaitee`);
+
+--
+-- Indexes for table `medecin`
+--
+ALTER TABLE `medecin`
+  ADD PRIMARY KEY (`id_medecin`),
+  ADD UNIQUE KEY `matricule` (`matricule`),
+  ADD KEY `idx_medecin_service` (`id_service`),
+  ADD KEY `idx_medecin_matricule` (`matricule`),
+  ADD KEY `idx_medecin_email` (`email`);
+
+--
+-- Indexes for table `medecins`
+--
+ALTER TABLE `medecins`
+  ADD PRIMARY KEY (`id_med`),
+  ADD UNIQUE KEY `Matricule_med` (`Matricule_med`),
+  ADD UNIQUE KEY `Email_med` (`Email_med`),
+  ADD UNIQUE KEY `idx_email_med` (`Email_med`),
+  ADD UNIQUE KEY `Matricule_med_2` (`Matricule_med`),
+  ADD KEY `idx_matricule_med` (`Matricule_med`),
+  ADD KEY `idx_specialisation` (`Spécialisation_med`);
+
+--
+-- Indexes for table `medicament`
+--
+ALTER TABLE `medicament`
+  ADD PRIMARY KEY (`id_medicament`),
+  ADD KEY `idx_medicament_nom` (`nom`),
+  ADD KEY `idx_medicament_statut` (`statut`),
+  ADD KEY `idx_medicament_stock` (`quantite_stock`);
+
+--
+-- Indexes for table `notifications`
+--
+ALTER TABLE `notifications`
+  ADD PRIMARY KEY (`id_notification`),
+  ADD KEY `idx_patient` (`id_patient`),
+  ADD KEY `idx_lu` (`lu`),
+  ADD KEY `idx_date_creation` (`Date_creation`),
+  ADD KEY `idx_type` (`type`);
+
+--
+-- Indexes for table `ordonnance`
+--
+ALTER TABLE `ordonnance`
+  ADD PRIMARY KEY (`id_ordonnance`),
+  ADD UNIQUE KEY `matricule` (`matricule`),
+  ADD UNIQUE KEY `id_consultation` (`id_consultation`),
+  ADD KEY `idx_ordonnance_matricule` (`matricule`),
+  ADD KEY `idx_ordonnance_consultation` (`id_consultation`),
+  ADD KEY `idx_ordonnance_statut` (`statut`);
+
+--
+-- Indexes for table `ordonnances`
+--
+ALTER TABLE `ordonnances`
+  ADD PRIMARY KEY (`id_ordonnance`),
+  ADD KEY `idx_date_emission` (`Date_émission`),
+  ADD KEY `idx_consultation_ordo` (`id_consultation`);
+
+--
+-- Indexes for table `paiement`
+--
+ALTER TABLE `paiement`
+  ADD PRIMARY KEY (`id_paiement`),
+  ADD UNIQUE KEY `matricule` (`matricule`),
+  ADD UNIQUE KEY `id_facture` (`id_facture`),
+  ADD KEY `idx_paiement_matricule` (`matricule`),
+  ADD KEY `idx_paiement_patient` (`id_patient`),
+  ADD KEY `idx_paiement_consultation` (`id_consultation`),
+  ADD KEY `idx_paiement_date` (`date_paiement`),
+  ADD KEY `idx_paiement_statut` (`statut`),
+  ADD KEY `id_service` (`id_service`);
+
+--
+-- Indexes for table `patient`
+--
+ALTER TABLE `patient`
+  ADD PRIMARY KEY (`id_patient`),
+  ADD UNIQUE KEY `numero_carnet` (`numero_carnet`),
+  ADD UNIQUE KEY `matricule` (`matricule`),
+  ADD UNIQUE KEY `matricule_2` (`matricule`),
+  ADD KEY `idx_patient_nom` (`nom`,`prenom`),
+  ADD KEY `idx_patient_carnet` (`numero_carnet`),
+  ADD KEY `idx_patient_email` (`email`),
+  ADD KEY `idx_patient_service` (`id_service`),
+  ADD KEY `idx_patient_matricule` (`matricule`);
+
+--
+-- Indexes for table `patients`
+--
+ALTER TABLE `patients`
+  ADD PRIMARY KEY (`id_patient`),
+  ADD UNIQUE KEY `Matricule_patient` (`Matricule_patient`),
+  ADD UNIQUE KEY `Email_patient` (`Email_patient`),
+  ADD UNIQUE KEY `idx_email_patient` (`Email_patient`),
+  ADD KEY `idx_matricule` (`Matricule_patient`),
+  ADD KEY `idx_nom_prenom` (`Nom_patient`,`Prénom_patient`);
+
+--
+-- Indexes for table `patient_services`
+--
+ALTER TABLE `patient_services`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_patient_service` (`id_patient`,`id_service`),
+  ADD KEY `idx_patient` (`id_patient`),
+  ADD KEY `idx_service` (`id_service`),
+  ADD KEY `idx_date_inscription` (`Date_inscription`);
+
+--
+-- Indexes for table `rendez_vous`
+--
+ALTER TABLE `rendez_vous`
+  ADD PRIMARY KEY (`id_rendez_vous`),
+  ADD KEY `idx_rendez_vous_patient` (`id_patient`),
+  ADD KEY `idx_rendez_vous_medecin` (`id_medecin`),
+  ADD KEY `idx_rendez_vous_date` (`date_rdv`),
+  ADD KEY `idx_rendez_vous_statut` (`statut`),
+  ADD KEY `idx_med_rdv` (`id_med`),
+  ADD KEY `idx_service_rdv` (`id_service`);
+
+--
+-- Indexes for table `service`
+--
+ALTER TABLE `service`
+  ADD PRIMARY KEY (`id_service`),
+  ADD KEY `idx_service_nom` (`nom`);
+
+--
+-- Indexes for table `services`
+--
+ALTER TABLE `services`
+  ADD PRIMARY KEY (`id_service`),
+  ADD KEY `idx_nom_service` (`Nom_service`);
+
+--
+-- Indexes for table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `email` (`email`),
+  ADD KEY `id_patient` (`id_patient`),
+  ADD KEY `id_med` (`id_med`),
+  ADD KEY `idx_email` (`email`),
+  ADD KEY `idx_role` (`role`);
+
+--
+-- Indexes for table `utilisateur`
+--
+ALTER TABLE `utilisateur`
+  ADD PRIMARY KEY (`id_utilisateur`),
+  ADD UNIQUE KEY `email` (`email`),
+  ADD KEY `idx_utilisateur_email` (`email`),
+  ADD KEY `idx_utilisateur_role` (`role`),
+  ADD KEY `idx_utilisateur_reference` (`id_reference`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `carnet`
+--
+ALTER TABLE `carnet`
+  MODIFY `id_carnet` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `carnets`
+--
+ALTER TABLE `carnets`
+  MODIFY `Num_carnet` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `consultation`
+--
+ALTER TABLE `consultation`
+  MODIFY `id_consultation` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `demande_rendez_vous`
+--
+ALTER TABLE `demande_rendez_vous`
+  MODIFY `id_demande` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `medecin`
+--
+ALTER TABLE `medecin`
+  MODIFY `id_medecin` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `medecins`
+--
+ALTER TABLE `medecins`
+  MODIFY `id_med` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+
+--
+-- AUTO_INCREMENT for table `medicament`
+--
+ALTER TABLE `medicament`
+  MODIFY `id_medicament` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `notifications`
+--
+ALTER TABLE `notifications`
+  MODIFY `id_notification` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `ordonnance`
+--
+ALTER TABLE `ordonnance`
+  MODIFY `id_ordonnance` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `ordonnances`
+--
+ALTER TABLE `ordonnances`
+  MODIFY `id_ordonnance` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `paiement`
+--
+ALTER TABLE `paiement`
+  MODIFY `id_paiement` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `patient`
+--
+ALTER TABLE `patient`
+  MODIFY `id_patient` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `patients`
+--
+ALTER TABLE `patients`
+  MODIFY `id_patient` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `patient_services`
+--
+ALTER TABLE `patient_services`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `rendez_vous`
+--
+ALTER TABLE `rendez_vous`
+  MODIFY `id_rendez_vous` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=147;
+
+--
+-- AUTO_INCREMENT for table `service`
+--
+ALTER TABLE `service`
+  MODIFY `id_service` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `services`
+--
+ALTER TABLE `services`
+  MODIFY `id_service` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT for table `utilisateur`
+--
+ALTER TABLE `utilisateur`
+  MODIFY `id_utilisateur` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `carnet`
+--
+ALTER TABLE `carnet`
+  ADD CONSTRAINT `carnet_ibfk_1` FOREIGN KEY (`id_patient`) REFERENCES `patient` (`id_patient`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `carnets`
+--
+ALTER TABLE `carnets`
+  ADD CONSTRAINT `carnets_ibfk_1` FOREIGN KEY (`id_patient`) REFERENCES `patients` (`id_patient`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `consultation`
+--
+ALTER TABLE `consultation`
+  ADD CONSTRAINT `consultation_ibfk_1` FOREIGN KEY (`id_medecin`) REFERENCES `medecin` (`id_medecin`),
+  ADD CONSTRAINT `consultation_ibfk_2` FOREIGN KEY (`id_patient`) REFERENCES `patient` (`id_patient`),
+  ADD CONSTRAINT `consultation_ibfk_3` FOREIGN KEY (`id_med`) REFERENCES `medecins` (`id_med`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `consultation_services`
+--
+ALTER TABLE `consultation_services`
+  ADD CONSTRAINT `consultation_services_ibfk_1` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `consultation_services_ibfk_2` FOREIGN KEY (`id_med`) REFERENCES `medecins` (`id_med`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `consultation_services_ibfk_3` FOREIGN KEY (`id_service`) REFERENCES `services` (`id_service`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `medecin`
+--
+ALTER TABLE `medecin`
+  ADD CONSTRAINT `medecin_ibfk_1` FOREIGN KEY (`id_service`) REFERENCES `service` (`id_service`);
+
+--
+-- Constraints for table `notifications`
+--
+ALTER TABLE `notifications`
+  ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`id_patient`) REFERENCES `patients` (`id_patient`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `ordonnance`
+--
+ALTER TABLE `ordonnance`
+  ADD CONSTRAINT `ordonnance_ibfk_1` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `ordonnances`
+--
+ALTER TABLE `ordonnances`
+  ADD CONSTRAINT `ordonnances_ibfk_1` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `paiement`
+--
+ALTER TABLE `paiement`
+  ADD CONSTRAINT `paiement_ibfk_2` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`),
+  ADD CONSTRAINT `paiement_ibfk_3` FOREIGN KEY (`id_service`) REFERENCES `services` (`id_service`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `patient`
+--
+ALTER TABLE `patient`
+  ADD CONSTRAINT `patient_ibfk_1` FOREIGN KEY (`id_service`) REFERENCES `service` (`id_service`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `patient_services`
+--
+ALTER TABLE `patient_services`
+  ADD CONSTRAINT `patient_services_ibfk_1` FOREIGN KEY (`id_patient`) REFERENCES `patients` (`id_patient`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `patient_services_ibfk_2` FOREIGN KEY (`id_service`) REFERENCES `services` (`id_service`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `rendez_vous`
+--
+ALTER TABLE `rendez_vous`
+  ADD CONSTRAINT `rendez_vous_ibfk_1` FOREIGN KEY (`id_patient`) REFERENCES `patient` (`id_patient`) ON DELETE CASCADE,
+  ADD CONSTRAINT `rendez_vous_ibfk_2` FOREIGN KEY (`id_medecin`) REFERENCES `medecin` (`id_medecin`),
+  ADD CONSTRAINT `rendez_vous_ibfk_3` FOREIGN KEY (`id_med`) REFERENCES `medecins` (`id_med`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `rendez_vous_ibfk_4` FOREIGN KEY (`id_service`) REFERENCES `services` (`id_service`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `users`
+--
+ALTER TABLE `users`
+  ADD CONSTRAINT `users_ibfk_1` FOREIGN KEY (`id_patient`) REFERENCES `patients` (`id_patient`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `users_ibfk_2` FOREIGN KEY (`id_med`) REFERENCES `medecins` (`id_med`) ON DELETE SET NULL ON UPDATE CASCADE;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
