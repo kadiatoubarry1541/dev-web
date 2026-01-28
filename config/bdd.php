@@ -6,43 +6,28 @@ if (!defined('BDD_INCLUDED')) {
     
     if (!function_exists('bdd')) {
         function bdd() {
-            // Détection InfinityFree : par le domaine OU si pas en local et pas de variables MYSQL définies
+            // Détection automatique : InfinityFree ou local
             $host = $_SERVER['HTTP_HOST'] ?? '';
-            $envHost = getenv('MYSQL_HOST');
-            $isInfinityFree = (stripos($host, 'infinityfree') !== false || stripos($host, 'great-site') !== false)
-                             || (($envHost === false || $envHost === '') && stripos($host, 'localhost') === false && stripos($host, '127.0.0.1') === false);
+            $isLocal = stripos($host, 'localhost') !== false || stripos($host, '127.0.0.1') !== false || php_sapi_name() === 'cli';
+            $isInfinityFree = stripos($host, 'great-site.net') !== false || stripos($host, 'infinityfree') !== false;
             
-            if ($isInfinityFree) {
+            if ($isInfinityFree && !$isLocal) {
                 // Configuration InfinityFree
                 $server = 'sql302.infinityfree.com';
                 $dbname = 'if0_41017295_sante1';
                 $port = '3306';
                 $username = 'if0_41017295';
-                $password = 'MallBzKQE6BiI'; // Mot de passe MySQL InfinityFree
+                $password = 'MallBzKQE6BiI';
             } else {
-                // Variables d'environnement (Render, etc.) ou valeurs par défaut (local XAMPP)
-                $server = getenv('MYSQL_HOST') ?: 'localhost';
-                $dbname = getenv('MYSQL_DATABASE') ?: 'santé1'; // Base locale avec accent
-                $port = getenv('MYSQL_PORT') ?: '3306';
-                $username = getenv('MYSQL_USER') ?: 'root';
-                $password = getenv('MYSQL_PASSWORD') ?: '';
+                // Configuration locale (XAMPP)
+                $server = 'localhost';
+                $dbname = 'santé1';
+                $port = '3306';
+                $username = 'root';
+                $password = '';
             }
             
             try {
-                // D'abord se connecter sans spécifier la base de données
-                $pdo_temp = new PDO("mysql:host=$server;port=$port;charset=utf8mb4", $username, $password);
-                $pdo_temp->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                
-                // Vérifier si la base de données existe, sinon la créer
-                // Utiliser des backticks pour sécuriser le nom de la base de données
-                $dbname_escaped = '`' . str_replace('`', '``', $dbname) . '`';
-                $dbname_quoted = $pdo_temp->quote($dbname);
-                $check_db = $pdo_temp->query("SHOW DATABASES LIKE $dbname_quoted");
-                if ($check_db->rowCount() == 0) {
-                    $pdo_temp->exec("CREATE DATABASE IF NOT EXISTS $dbname_escaped CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-                }
-                
-                // Maintenant se connecter à la base de données
                 $pdo = new PDO("mysql:host=$server;port=$port;dbname=$dbname;charset=utf8mb4", $username, $password);
                 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                 $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
