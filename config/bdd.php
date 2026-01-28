@@ -6,10 +6,11 @@ if (!defined('BDD_INCLUDED')) {
     
     if (!function_exists('bdd')) {
         function bdd() {
-            // Détection automatique si on est sur InfinityFree
-            $isInfinityFree = strpos($_SERVER['HTTP_HOST'] ?? '', 'infinityfreeapp.com') !== false || 
-                             strpos($_SERVER['HTTP_HOST'] ?? '', 'great-site.net') !== false ||
-                             strpos($_SERVER['HTTP_HOST'] ?? '', 'infinityfree.net') !== false;
+            // Détection InfinityFree : par le domaine OU si pas en local et pas de variables MYSQL définies
+            $host = $_SERVER['HTTP_HOST'] ?? '';
+            $envHost = getenv('MYSQL_HOST');
+            $isInfinityFree = (stripos($host, 'infinityfree') !== false || stripos($host, 'great-site') !== false)
+                             || (($envHost === false || $envHost === '') && stripos($host, 'localhost') === false && stripos($host, '127.0.0.1') === false);
             
             if ($isInfinityFree) {
                 // Configuration InfinityFree
