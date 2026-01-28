@@ -10,17 +10,13 @@
                                 if (!isset($base_path)) {
                                     $base_path = '';
                                 }
-                                // Logo principal du site dans le dossier images
-                                $footer_logo = $base_path . 'images/logo.png';
-                                // Si le logo principal n'existe pas, utiliser un logo de secours
-                                if (!file_exists(__DIR__ . '/../images/logo.png')) {
-                                    $footer_logo = $base_path . 'images/footer-logo.png';
-                                }
+                                // Logo principal du site : même logo personnalisé que dans l'entête
+                                $footer_logo = $base_path . 'image/1.jpeg';
                                 ?>
                                 <img src="<?php echo htmlspecialchars($footer_logo); ?>" 
-                                     alt="Logo MediCo. - Centre Médical"
+                                     alt="Logo du site"
                                      style="max-width: 180px; height: auto;"
-                                     onerror="this.onerror=null; this.src='<?php echo $base_path; ?>images/footer-logo.png';">
+                                     onerror="this.onerror=null; this.style.display='none';">
                             </div>
                             <p class="m-t30 m-b20"><strong>MediCo.</strong> est un centre médical d'excellence offrant des soins de santé complets avec une équipe de professionnels qualifiés. Nous nous engageons à fournir des soins de qualité dans un environnement moderne et accueillant, en mettant l'accent sur le bien-être de chaque patient.</p>
                             <ul class="dez-social-icon border dez-social-icon-lg">

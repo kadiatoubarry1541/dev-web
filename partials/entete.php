@@ -276,23 +276,15 @@ if (function_exists('estConnecte') && estConnecte()) {
                     <div class="logo-profile-wrapper">
                         <div class="logo-header mostion">
                             <?php 
-                            // Chemin absolu pour le logo
-                            $logo_path = __DIR__ . '/../image/1.jpeg';
-                            // Utiliser le chemin relatif depuis la racine du site
+                            // Logo principal du site (BM CONNECT) – même pour tout le projet
+                            // On pointe toujours vers le même fichier de logo personnalisé
                             $logo_url = $base_path . 'image/1.jpeg';
-                            // Vérifier si le fichier existe, sinon utiliser une image par défaut
-                            if (!file_exists($logo_path)) {
-                                $logo_url = $base_path . 'images/logo.png';
-                                if (!file_exists(__DIR__ . '/../images/logo.png')) {
-                                    $logo_url = $base_path . 'images/icons/icon1.jpg';
-                                }
-                            }
                             ?>
                             <a href="<?php echo $base_path; ?>index.php">
                                 <img src="<?php echo htmlspecialchars($logo_url); ?>" 
                                      width="193" height="89" 
-                                     alt="Logo MediCo. - Centre Médical"
-                                     onerror="this.onerror=null; this.src='<?php echo $base_path; ?>images/icons/icon1.jpg';">
+                                     alt="Logo du site"
+                                     onerror="this.onerror=null; this.style.display='none';">
                             </a>
                         </div>
                         <?php if (estConnecte() && $user_info !== null): 
